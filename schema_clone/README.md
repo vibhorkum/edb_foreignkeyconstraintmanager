@@ -21,20 +21,23 @@ Usage:
 
 Following are the steps which user has to before using function provided by this module:
 1. Create source and target servers using postgres_fdw:
-
+```sql
 CREATE SERVER src_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
 CREATE SERVER tgt_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
-
+```
 2. Create user mapping for each server using CREATE USER MAPPING command:
+```sql
 CREATE USER MAPPING FOR enterprisedb SERVER src_postgres_server OPTIONS (user 'enterprisedb', password 'edb');
 CREATE USER MAPPING FOR enterprisedb SERVER tgt_postgres_server OPTIONS (user 'enterprisedb', password 'edb');
-
+```
 3. Create a database directory using CREATE DIRECTORY command:
+```sql
 CREATE DIRECTORY empdir AS '/tmp/schemaclone';
-
+```
 3. Using file_fdw create a clone_error_serevr as given below:
+```sql
 CREATE SERVER clone_error_server FOREIGN DATA WRAPPER file_fdw;
-
+```
 
 Function clone_remote_schema takes following arguments in sequence:
 1. src_fdw_server: source server name
@@ -49,7 +52,7 @@ Function clone_remote_schema takes following arguments in sequence:
 
 Example of usages:
 -------------------
-
+```sql
 CREATE SERVER src_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
 CREATE SERVER tgt_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
 
@@ -91,5 +94,5 @@ NOTICE:  disconnect
 ---------------------
  t
 (1 row)
-
+```
 
