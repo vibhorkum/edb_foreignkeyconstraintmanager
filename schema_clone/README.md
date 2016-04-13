@@ -1,5 +1,5 @@
-Documentation:
-----------------
+# Documentation:
+
 clone_remote_schema is a module written in plpgsql function and specifically made for EPAS version 9.5(Enterprise Postgres Advanced Server).
 Using this function user can clone the remote schema to target database. This module consists of following three functions:
 1. clone_pre_data_ddl: function generate pre-data ddls using pg_dump command.
@@ -9,7 +9,7 @@ Using this function user can clone the remote schema to target database. This mo
 
 Module also utilizes user defined directory to create error log file.
 
-Pre-requisite:
+##Pre-requisite:
 ---------------
 To use this module user has to install following extensions in database:
 CREATE EXTENSION postgres_fdw;
@@ -17,7 +17,7 @@ CREATE EXTENSION dblink;
 CREATE EXTENSION file_fdw;
 
 
-Usage:
+##Usage:
 
 Following are the steps which user has to before using function provided by this module:
 1. Create source and target servers using postgres_fdw:
@@ -50,7 +50,7 @@ Function clone_remote_schema takes following arguments in sequence:
 7. tgt_schema: name of schema at target server side
 
 
-Example of usages:
+##Example of usages:
 -------------------
 ```sql
 CREATE SERVER src_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
