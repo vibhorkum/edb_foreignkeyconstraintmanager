@@ -26,16 +26,19 @@ Following are the steps which user has to before using function provided by this
 CREATE SERVER src_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
 CREATE SERVER tgt_postgres_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', port '5444', dbname 'schema_rename');
 ```
+
 2. Create user mapping for each server using CREATE USER MAPPING command:
 ```sql
 CREATE USER MAPPING FOR enterprisedb SERVER src_postgres_server OPTIONS (user 'enterprisedb', password 'edb');
 CREATE USER MAPPING FOR enterprisedb SERVER tgt_postgres_server OPTIONS (user 'enterprisedb', password 'edb');
 ```
+
 3. Create a database directory using CREATE DIRECTORY command:
 ```sql
 CREATE DIRECTORY empdir AS '/tmp/schemaclone';
 ```
-3. Using file_fdw create a clone_error_serevr as given below:
+
+4. Using file_fdw create a clone_error_serevr as given below:
 ```sql
 CREATE SERVER clone_error_server FOREIGN DATA WRAPPER file_fdw;
 ```
