@@ -12,10 +12,11 @@ Module also utilizes user defined directory to create error log file.
 ##Pre-requisite:
 ---------------
 To use this module user has to install following extensions in database:
+```sql
 CREATE EXTENSION postgres_fdw;
 CREATE EXTENSION dblink;
 CREATE EXTENSION file_fdw;
-
+```
 
 ##Usage:
 
