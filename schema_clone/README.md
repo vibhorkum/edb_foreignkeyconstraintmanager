@@ -6,7 +6,8 @@ Using this function user can clone the remote schema to target database. This mo
 1. clone_pre_data_ddl: function generate pre-data ddls using pg_dump command.
 2. clone_post_data_ddl: function generate post-data ddls using pg_dump command.
 3. remote_table_copy_data: function copies data from source table to target table using COPY command
-4. clone_remote_schema: function is a wrapper function which takes user input and call above 3 functions
+4. clean_schema: function to clean reminent of failed clone of schema
+5. clone_remote_schema: function is a wrapper function which takes user input and call above 3 functions
 
 Module also utilizes user defined directory to create error log file.
 
