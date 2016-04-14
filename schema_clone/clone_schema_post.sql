@@ -37,11 +37,8 @@ DECLARE
    pg_dump_command TEXT;
    copy_pg_dump TEXT;
    psql_command TEXT;
-   copy_psql_command TEXT;
    rename_sed TEXT;
-   copy_rename_sed TEXT;
    delete_dump    TEXT;
-   copy_delete_dump TEXT;
    error_count bigint;
 BEGIN
    CREATE TEMP TABLE post_log_table(log text);
@@ -56,13 +53,16 @@ BEGIN
    tgt_passwd    := rec.PASSWORD;
 
    RAISE NOTICE 'create post data ddls';
-   delete_dump := format('rm -f %s/%s.dmp',directory_path, dmp_file_name);
-   copy_delete_dump := 'COPY post_log_table FROM program '||quote_literal(delete_dump);
- 
-   pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=post-data -n %s --snapshot=%s "%s" -f %s/%s.dmp 2>%s/%s_post.error',
+   pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=post-data -n %s --snapshot=%s "%s" 2>%s/%s_post.error',
                               src_user_name, src_passwd, pg_dump, src_schema, db_snapshot_id, 
-                              src_conn_info, directory_path, dmp_file_name, directory_path, dmp_file_name);
-   copy_pg_dump := $SQL$ COPY post_log_table FROM program '$SQL$|| pg_dump_command ||$SQL$ ' $SQL$;
+                              src_conn_info, directory_path, dmp_file_name);
+   rename_sed := format('sed -e "s/^SET search_path = %s/SET search_path = %s/g" -e "s/ %s\./ %s\./g" -e "/^REVOKE ALL ON SCHEMA/d" -e "/^GRANT ALL ON SCHEMA/d" -e "s/^CREATE SCHEMA %s/CREATE SCHEMA %s/g"',
+                         src_schema,tgt_schema, src_schema, tgt_schema, src_schema, tgt_schema);
+   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -X -q --pset pager=off -v ON_ERROR_STOP=1  "%s" 2>%s/%s_psql.error',
+                          tgt_user_name, tgt_passwd,psql, tgt_conn_info, directory_path, dmp_file_name);
+                         
+   copy_pg_dump := $SQL$ COPY post_log_table FROM program '$SQL$|| pg_dump_command ||$SQL$ | $SQL$|| rename_sed || $SQL$ | $SQL$ ||
+                  psql_command ||$SQL$ ' $SQL$;
    
    EXECUTE copy_pg_dump;
    
@@ -70,7 +70,6 @@ BEGIN
    EXECUTE 'CREATE FOREIGN TABLE IF NOT EXISTS dump_error_post (log TEXT) SERVER clone_error_server OPTIONS(filename '|| 
               quote_literal(directory_path|| '/'||dmp_file_name||'_post.error')||')';
    SELECT COUNT(1) INTO error_count  FROM dump_error_post WHERE log ~ 'ERROR:';
-   
    IF error_count > 0 THEN
      RAISE NOTICE 'error occurred during post ddl stage';
      FOR rec IN SELECT log FROM dump_error_post
@@ -85,19 +84,6 @@ BEGIN
      RETURN false;
    END IF;
 
-   RAISE NOTICE 'changing schema name';
-   rename_sed := format('sed -i -e "s/^SET search_path = %s/SET search_path = %s/g" -e "s/ %s\./ %s\./g" -e "/^REVOKE ALL ON SCHEMA/d" -e "/^GRANT ALL ON SCHEMA/d" -e "s/^CREATE SCHEMA %s/CREATE SCHEMA %s/g" %s/%s.dmp',
-                         src_schema,tgt_schema, src_schema, tgt_schema, src_schema, tgt_schema, directory_path, dmp_file_name);
-   copy_rename_sed := $SQL$ COPY post_log_table FROM program '$SQL$|| rename_sed||$SQL$ ' $SQL$;
-   EXECUTE copy_rename_sed;  
- 
-   RAISE NOTICE 'restoring ddls in schema';
-   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -X -q --pset pager=off -v ON_ERROR_ROLLBACK=on -v ON_ERROR_STOP=1 --single-transaction -f %s/%s.dmp  "%s" 2>%s/%s_psql.error',
-                          tgt_user_name, tgt_passwd,psql, directory_path, dmp_file_name, tgt_conn_info, directory_path, dmp_file_name);
-
-   copy_psql_command := $SQL$ COPY post_log_table FROM program '$SQL$|| psql_command ||$SQL$ ' $SQL$;
-   EXECUTE copy_psql_command;
-
    RAISE NOTICE 'verifying restore errors.';
    EXECUTE 'CREATE FOREIGN TABLE IF NOT EXISTS dump_error_psql (log TEXT) SERVER clone_error_server OPTIONS(filename '|| 
               quote_literal(directory_path||'/'||dmp_file_name||'_psql.error')||')';
@@ -111,7 +97,6 @@ BEGIN
      END LOOP;
      EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_post';
      EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
-     EXECUTE copy_delete_dump;
      DROP TABLE post_log_table;
      RAISE EXCEPTION 'failed to restoe copy % schema. For more detail please see log file %/%_psql.error',
                       src_schema, directory_path, dmp_file_name;
@@ -121,7 +106,6 @@ BEGIN
    RAISE NOTICE 'restored of post ddl successfully'; 
    EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
    EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_post';
-   EXECUTE copy_delete_dump;
    DROP TABLE post_log_table;
    RETURN TRUE;
    EXCEPTION 
@@ -129,7 +113,6 @@ BEGIN
           EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
           EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_post';
           DROP TABLE post_log_table;
-          EXECUTE copy_delete_dump;
           RAISE NOTICE 'failed to restoe copy % schema. For more detail please see log file %/%_psql/post.error',
                       src_schema, directory_path, dmp_file_name;
           RETURN false;     
