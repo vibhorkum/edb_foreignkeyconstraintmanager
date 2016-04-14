@@ -109,10 +109,10 @@ BEGIN
   PERFORM dblink_exec(name_tag, 'DROP SCHEMA '||schemaname||' CASCADE;');
   PERFORM dblink_disconnect( name_tag);
   RETURN true;
---   EXCEPTION 
---     WHEN OTHERS THEN
---           RAISE NOTICE 'Failed to clean schema';
---           PERFORM dblink_disconnect( name_tag);
---           RETURN false;
+   EXCEPTION 
+     WHEN OTHERS THEN
+           RAISE NOTICE 'Failed to clean schema';
+           PERFORM dblink_disconnect( name_tag);
+           RETURN false;
 END;
 $function$;
