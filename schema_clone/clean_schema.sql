@@ -43,17 +43,20 @@ BEGIN
       PERFORM  dblink_exec(name_tag,'ALTER TABLE '||rec.table_name||' DROP CONSTRAINT IF EXISTS '||rec.constraint_name||' CASCADE;');
    END LOOP;
 
-   -- DROP ALL procedures and packages and Functions 
-
-  FOR rec IN SELECT DISTINCT type,name  from all_source WHERE schema_name = schemaname AND TYPE != 'TRIGGER' AND TYPE IN ('PROCEDURE','PACKAGE','PACKAGE BODY')
+ -- DROP all procedures
+ FOR rec IN SELECT DISTINCT type,name  from all_source WHERE schema_name = schemaname AND type IN ('PROCEDURE')
   LOOP
-   IF rec.TYPE = 'PROCEDURE' THEN
     RAISE NOTICE '%', 'DROP '||rec.type||' '||schemaname||'.'||rec.name||';';
     PERFORM dblink_exec(name_tag, 'DROP '||rec.type||' '||schemaname||'.'||rec.name||';');
-   ELSE
+  END LOOP;
+
+
+   -- DROP ALL packages 
+
+  FOR rec IN SELECT DISTINCT type,name  from all_source WHERE schema_name = schemaname AND type IN ('PROCEDURE','PACKAGE','PACKAGE BODY')
+  LOOP
      RAISE NOTICE '%', 'DROP '||rec.type||' '||schemaname||'.'||rec.name||' CASCADE;';
      PERFORM dblink_exec(name_tag, 'DROP '||rec.type||' '||schemaname||'.'||rec.name||' CASCADE;');
-   END IF;
   END LOOP;
 
  -- DROP all functions 
