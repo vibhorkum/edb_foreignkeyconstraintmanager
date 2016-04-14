@@ -34,7 +34,7 @@ DECLARE
    db_snapshot_id TEXT;
    name_tag       TEXT;
    status         boolean;
-   schema_exists  boolean;
+   schema_exists  boolean := false;
 BEGIN
    SET log_min_message TO 'Notice';
   
@@ -52,7 +52,8 @@ BEGIN
    name_tag := to_char(now(),'YYYYDDMMHH24MISS');
 
    IF EXISTS( SELECT 1 FROM pg_namespace WHERE nspname = tgt_schema) THEN
-      RAISE EXCEPTION 'schema % already exists in database', tgt_schema USING ERRCODE = '22012';
+      schema_exists = true;
+      RAISE EXCEPTION 'schema % already exists in database', tgt_schema;
    END IF;
    
    PERFORM dblink_connect( name_tag, src_conn_info ||' user='|| src_user_name||' password='|| src_passwd);
@@ -109,11 +110,10 @@ BEGIN
   PERFORM dblink_disconnect(name_tag);
   RETURN TRUE;
   EXCEPTION 
-    WHEN SQLSTATE '22012' THEN
-        RAISE NOTICE 'schema already exists';
-        RETURN FALSE;
     WHEN OTHERS THEN
-       EXECUTE 'DROP SCHEMA '||tgt_schema||' CASCADE';
+       IF schema_exists THEN
+         EXECUTE 'DROP SCHEMA '||tgt_schema||' CASCADE';
+       END IF;
        PERFORM dblink_disconnect(name_tag);
        RETURN false;
 END;
