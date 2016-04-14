@@ -38,6 +38,14 @@ DECLARE
 BEGIN
    SET log_min_message TO 'Notice';
   
+   SELECT CASE WHEN COUNT(1) = 0 THEN FALSE ELSE TRUE END INTO schema_exists FROM pg_catalog.pg_namespace WHERE nspname = tgt_schema;
+   IF  schema_exists  THEN
+      RAISE NOTICE 'schema % already exists in database', tgt_schema;
+      RETURN false;
+   ELSE 
+     RAISE NOTICE 'Schema doesnt exists';
+   END IF;
+
    SELECT dirpath INTO dir_path FROM pg_catalog.edb_dir WHERE dirname = dir_name;
 
    EXECUTE src_db_connection_sql INTO rec;
