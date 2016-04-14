@@ -41,7 +41,10 @@ DECLARE
    delete_dump    TEXT;
    error_count bigint;
 BEGIN
+   -- creating pre log table to check for any incoming message
    CREATE TEMP TABLE pre_log_table(log text);
+   
+   -- collecting src and target information for execution
    EXECUTE src_db_connection_sql INTO rec;
    src_conn_info := rec.CONNECTION;
    src_user_name := rec.USER;
@@ -52,6 +55,8 @@ BEGIN
    tgt_user_name := rec.USER;
    tgt_passwd    := rec.PASSWORD;
 
+  -- preparing pg_dump and psql command.
+  -- We will be using sed to rename the schema. This will create linux dependency
    RAISE NOTICE 'create pre data ddls';
    pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=pre-data -n %s --snapshot=%s "%s" 2>%s/%s_pre.error',
                               src_user_name, src_passwd, pg_dump, src_schema, db_snapshot_id, 
@@ -60,12 +65,14 @@ BEGIN
                          src_schema,tgt_schema, src_schema, tgt_schema, src_schema, tgt_schema);
    psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -X -q --pset pager=off -v ON_ERROR_STOP=1  "%s" 2>%s/%s_psql.error',
                           tgt_user_name, tgt_passwd,psql, tgt_conn_info, directory_path, dmp_file_name);
-                         
+   
+   -- preparing copy_pg_dump command with pg_dump and psql command to execute
    copy_pg_dump := $SQL$ COPY pre_log_table FROM program '$SQL$|| pg_dump_command ||$SQL$ | $SQL$|| rename_sed || $SQL$ | $SQL$ ||
                   psql_command ||$SQL$ ' $SQL$;
    
    EXECUTE copy_pg_dump;
    
+   -- we will be using file_fdw to verify the errors from log file and will take action accordingly.
    RAISE NOTICE 'verifying for any error';
    EXECUTE 'CREATE FOREIGN TABLE IF NOT EXISTS dump_error_pre (log TEXT) SERVER clone_error_server OPTIONS(filename '|| 
               quote_literal(directory_path|| '/'||dmp_file_name||'_pre.error')||')';
