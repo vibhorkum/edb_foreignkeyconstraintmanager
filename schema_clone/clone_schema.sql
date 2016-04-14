@@ -114,7 +114,10 @@ BEGIN
   EXCEPTION 
     WHEN OTHERS THEN
        IF schema_exists THEN
-         EXECUTE 'DROP SCHEMA '||tgt_schema||' CASCADE';
+         select clean_schema(tgt_fdw_server,tgt_user,tgt_schema) INTO status;
+         IF status = false THEN
+           RAISE NOTICE 'failed to clean schema';
+         END IF;
        END IF;
        PERFORM dblink_disconnect(name_tag);
        RETURN false;
