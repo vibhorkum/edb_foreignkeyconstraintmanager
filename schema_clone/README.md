@@ -12,12 +12,13 @@ Module also utilizes user defined directory to create error log file.
 
 ##Pre-requisite:
 ---------------
-To use this module user has to install following extensions in database:
+To use this module, user has to install following extensions in database:
 ```sql
 CREATE EXTENSION postgres_fdw;
 CREATE EXTENSION dblink;
 CREATE EXTENSION file_fdw;
 ```
+Currently, this module is made for EPAS instance running on Linux.
 
 ##Usage:
 
