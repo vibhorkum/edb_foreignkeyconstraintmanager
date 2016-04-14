@@ -37,11 +37,8 @@ DECLARE
    pg_dump_command TEXT;
    copy_pg_dump TEXT;
    psql_command TEXT;
-   copy_psql_command TEXT;
    rename_sed TEXT;
-   copy_rename_sed TEXT;
    delete_dump    TEXT;
-   copy_delete_dump TEXT;
    error_count bigint;
 BEGIN
    CREATE TEMP TABLE pre_log_table(log text);
@@ -59,10 +56,16 @@ BEGIN
    delete_dump := format('rm -f %s/%s.dmp',directory_path, dmp_file_name);
    copy_delete_dump := 'COPY pre_log_table FROM program '||quote_literal(delete_dump);
  
-   pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=pre-data -n %s --snapshot=%s "%s" -f %s/%s.dmp 2>%s/%s_pre.error',
+   pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=pre-data -n %s --snapshot=%s "%s" 2>%s/%s_pre.error',
                               src_user_name, src_passwd, pg_dump, src_schema, db_snapshot_id, 
-                              src_conn_info, directory_path, dmp_file_name, directory_path, dmp_file_name);
-   copy_pg_dump := $SQL$ COPY pre_log_table FROM program '$SQL$|| pg_dump_command ||$SQL$ ' $SQL$;
+                              src_conn_info, directory_path, dmp_file_name);
+   rename_sed := format('sed -e "s/^SET search_path = %s/SET search_path = %s/g" -e "s/ %s\./ %s\./g" -e "/^REVOKE ALL ON SCHEMA/d" -e "/^GRANT ALL ON SCHEMA/d" -e "s/^CREATE SCHEMA %s/CREATE SCHEMA %s/g"',
+                         src_schema,tgt_schema, src_schema, tgt_schema, src_schema, tgt_schema);
+   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -X -q --pset pager=off -v ON_ERROR_STOP=1  "%s" 2>%s/%s_psql.error',
+                          tgt_user_name, tgt_passwd,psql, tgt_conn_info, directory_path, dmp_file_name);
+                         
+   copy_pg_dump := $SQL$ COPY pre_log_table FROM program '$SQL$|| pg_dump_command ||$SQL$ | $SQL$|| rename_sed || $SQL$ | $SQL$ ||
+                  psql_command ||$SQL$ ' $SQL$;
    
    EXECUTE copy_pg_dump;
    
@@ -70,7 +73,6 @@ BEGIN
    EXECUTE 'CREATE FOREIGN TABLE IF NOT EXISTS dump_error_pre (log TEXT) SERVER clone_error_server OPTIONS(filename '|| 
               quote_literal(directory_path|| '/'||dmp_file_name||'_pre.error')||')';
    SELECT COUNT(1) INTO error_count  FROM dump_error_pre WHERE log ~ 'ERROR:';
-   
    IF error_count > 0 THEN
      RAISE NOTICE 'error occurred during pre ddl stage';
      FOR rec IN SELECT log FROM dump_error_pre
@@ -84,19 +86,6 @@ BEGIN
      EXECUTE copy_delete_dump;
      RETURN false;
    END IF;
-
-   RAISE NOTICE 'changing schema name';
-   rename_sed := format('sed -i -e "s/^SET search_path = %s/SET search_path = %s/g" -e "s/ %s\./ %s\./g" -e "/^REVOKE ALL ON SCHEMA/d" -e "/^GRANT ALL ON SCHEMA/d" -e "s/^CREATE SCHEMA %s/CREATE SCHEMA %s/g" %s/%s.dmp',
-                         src_schema,tgt_schema, src_schema, tgt_schema, src_schema, tgt_schema, directory_path, dmp_file_name);
-   copy_rename_sed := $SQL$ COPY pre_log_table FROM program '$SQL$|| rename_sed||$SQL$ ' $SQL$;
-   EXECUTE copy_rename_sed;  
- 
-   RAISE NOTICE 'restoring ddls in schema';
-   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -X -q --pset pager=off -v ON_ERROR_ROLLBACK=on -v ON_ERROR_STOP=1 --single-transaction -f %s/%s.dmp  "%s" 2>%s/%s_psql.error',
-                          tgt_user_name, tgt_passwd,psql, directory_path, dmp_file_name, tgt_conn_info, directory_path, dmp_file_name);
-
-   copy_psql_command := $SQL$ COPY pre_log_table FROM program '$SQL$|| psql_command ||$SQL$ ' $SQL$;
-   EXECUTE copy_psql_command;
 
    RAISE NOTICE 'verifying restore errors.';
    EXECUTE 'CREATE FOREIGN TABLE IF NOT EXISTS dump_error_psql (log TEXT) SERVER clone_error_server OPTIONS(filename '|| 
