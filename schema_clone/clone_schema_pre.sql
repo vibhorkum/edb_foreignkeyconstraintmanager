@@ -100,7 +100,6 @@ BEGIN
      END LOOP;
      EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_pre';
      EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
-     EXECUTE copy_delete_dump;
      DROP TABLE pre_log_table;
      RAISE EXCEPTION 'failed to restoe copy % schema. For more detail please see log file %/%_psql.error',
                       src_schema, directory_path, dmp_file_name;
@@ -110,7 +109,6 @@ BEGIN
    RAISE NOTICE 'restored of pre ddl successfully'; 
    EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
    EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_pre';
-   EXECUTE copy_delete_dump;
    DROP TABLE pre_log_table;
    RETURN TRUE;
    EXCEPTION 
@@ -118,7 +116,6 @@ BEGIN
           EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_psql';
           EXECUTE 'DROP FOREIGN TABLE IF EXISTS dump_error_pre';
           DROP TABLE pre_log_table;
-          EXECUTE copy_delete_dump;
           RAISE NOTICE 'failed to restoe copy % schema. For more detail please see log file %/%_psql/pre.error',
                       src_schema, directory_path, dmp_file_name;
           RETURN false;     
