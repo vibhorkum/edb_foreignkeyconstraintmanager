@@ -34,6 +34,7 @@ DECLARE
    db_snapshot_id TEXT;
    name_tag       TEXT;
    status         boolean;
+   schema_exists  boolean;
 BEGIN
    SET log_min_message TO 'Notice';
   
@@ -51,7 +52,7 @@ BEGIN
    name_tag := to_char(now(),'YYYYDDMMHH24MISS');
 
    IF EXISTS( SELECT 1 FROM pg_namespace WHERE nspname = tgt_schema) THEN
-      RAISE EXCEPTION 'schema % already exists in database',tgt_schema;
+      RAISE  'schema % already exists in database',tgt_schema;
       RETURN false;
    END IF;
    
