@@ -52,7 +52,7 @@ BEGIN
    name_tag := to_char(now(),'YYYYDDMMHH24MISS');
 
    IF EXISTS( SELECT 1 FROM pg_namespace WHERE nspname = tgt_schema) THEN
-      RAISE 'schema % already exists in database',tgt_schema USING ERRORCODE = '22012';
+      RAISE 'schema % already exists in database', tgt_schema USING ERRCODE = '220128';
    END IF;
    
    PERFORM dblink_connect( name_tag, src_conn_info ||' user='|| src_user_name||' password='|| src_passwd);
@@ -109,7 +109,7 @@ BEGIN
   PERFORM dblink_disconnect(name_tag);
   RETURN TRUE;
   EXCEPTION 
-    WHEN SQLSTATE '22012' THEN
+    WHEN SQLSTATE '220128' THEN
         RAISE NOTICE 'schema already exists';
         RETURN FALSE;
     WHEN OTHERS THEN
