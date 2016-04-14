@@ -92,7 +92,7 @@ BEGIN
    EXECUTE copy_rename_sed;  
  
    RAISE NOTICE 'restoring ddls in schema';
-   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s --single-transaction -f %s/%s.dmp  "%s" 2>%s/%s_psql.error',
+   psql_command := format('PGUSER="%s" PGPASSWORD="%s" %s -v ON_ERROR_ROLLBACK=on --single-transaction -f %s/%s.dmp  "%s" 2>%s/%s_psql.error',
                           tgt_user_name, tgt_passwd,psql, directory_path, dmp_file_name, tgt_conn_info, directory_path, dmp_file_name);
 
    copy_psql_command := $SQL$ COPY post_log_table FROM program '$SQL$|| psql_command ||$SQL$ ' $SQL$;
