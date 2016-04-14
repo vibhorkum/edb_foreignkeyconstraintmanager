@@ -55,8 +55,8 @@ BEGIN
    snapshot_sql  := format('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ; SET TRANSACTION SNAPSHOT %L;',db_snapshot_id);
    copy_src_sql  := format('COPY %s TO STDOUT',src_table_name);
    copy_tgt_sql  := format('COPY %s FROM STDIN',tgt_table_name);
-   psql_sql_src  := format('PGUSER=%s PGPASSWORD=%s %s "%s" -c ',src_user_name,src_passwd,psql_command,src_conn_info);
-   psql_sql_tgt  := format('PGUSER=%s PGPASSWORD=%s %s "%s" -c ',tgt_user_name,tgt_passwd,psql_command,tgt_conn_info);
+   psql_sql_src  := format('PGUSER=%s PGPASSWORD=%s %s -X -q -a -1 -v ON_ERROR_STOP=1 --pset pager=off "%s" -c ',src_user_name,src_passwd,psql_command,src_conn_info);
+   psql_sql_tgt  := format('PGUSER=%s PGPASSWORD=%s %s -X -q -a -1 -v ON_ERROR_STOP=1 --pset pager=off "%s" -c ',tgt_user_name,tgt_passwd,psql_command,tgt_conn_info);
 
  
    copy_command  := 'COPY copy_log_table FROM program '||quote_literal(psql_sql_src||'"'||snapshot_sql||copy_src_sql||'"|'||psql_sql_tgt||'"'||copy_tgt_sql||'"');
