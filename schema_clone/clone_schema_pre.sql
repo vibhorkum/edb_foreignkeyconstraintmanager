@@ -53,9 +53,6 @@ BEGIN
    tgt_passwd    := rec.PASSWORD;
 
    RAISE NOTICE 'create pre data ddls';
-   delete_dump := format('rm -f %s/%s.dmp',directory_path, dmp_file_name);
-   copy_delete_dump := 'COPY pre_log_table FROM program '||quote_literal(delete_dump);
- 
    pg_dump_command := format('PGUSER="%s" PGPASSWORD="%s" %s -O --section=pre-data -n %s --snapshot=%s "%s" 2>%s/%s_pre.error',
                               src_user_name, src_passwd, pg_dump, src_schema, db_snapshot_id, 
                               src_conn_info, directory_path, dmp_file_name);
