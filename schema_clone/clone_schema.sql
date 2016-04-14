@@ -36,8 +36,9 @@ DECLARE
    status         boolean;
    schema_exists  boolean := false;
 BEGIN
-   SET log_min_message TO 'Notice';
   
+   SELECT dirpath INTO dir_path FROM pg_catalog.edb_dir WHERE dirname = dir_name;
+
    SELECT CASE WHEN COUNT(1) = 0 THEN FALSE ELSE TRUE END INTO schema_exists FROM pg_catalog.pg_namespace WHERE nspname = tgt_schema;
    IF  schema_exists  THEN
       RAISE NOTICE 'schema % already exists in database', tgt_schema;
@@ -45,8 +46,6 @@ BEGIN
    ELSE 
      RAISE NOTICE 'Schema doesnt exists';
    END IF;
-
-   SELECT dirpath INTO dir_path FROM pg_catalog.edb_dir WHERE dirname = dir_name;
 
    EXECUTE src_db_connection_sql INTO rec;
    src_conn_info := rec.CONNECTION;
@@ -59,11 +58,6 @@ BEGIN
    tgt_passwd    := rec.PASSWORD;
    name_tag := to_char(now(),'YYYYDDMMHH24MISS');
 
-   IF EXISTS( SELECT 1 FROM pg_namespace WHERE nspname = tgt_schema) THEN
-      schema_exists = true;
-      RAISE EXCEPTION 'schema % already exists in database', tgt_schema;
-   END IF;
-   
    PERFORM dblink_connect( name_tag, src_conn_info ||' user='|| src_user_name||' password='|| src_passwd);
 
    SELECT snapshot_id INTO db_snapshot_id FROM dblink(name_tag,'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ; SELECT pg_export_snapshot();') foo(snapshot_id TEXT);
@@ -74,7 +68,7 @@ BEGIN
                              tgt_user,
                              pg_home,
                              dir_path,
-                             name_tag,
+                             tgt_schema||'_'||name_tag,
                              src_schema, 
                              tgt_schema ) INTO status;
   RAISE NOTICE 'status pre data: %',status;
@@ -106,7 +100,7 @@ BEGIN
                              tgt_user,
                              pg_home,
                              dir_path,
-                             name_tag,
+                             tgt_schema||'_'||name_tag,
                              src_schema,   
                              tgt_schema ) INTO status;
   RAISE NOTICE 'status post data: %',status;
@@ -126,4 +120,3 @@ BEGIN
        RETURN false;
 END;
 $function$;
-
