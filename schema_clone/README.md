@@ -103,3 +103,7 @@ NOTICE:  disconnect
 (1 row)
 ```
 
+## TODO:
+* remove the dependencies of linux
+* if possible convert pg_dump and psql libraries to use
+
