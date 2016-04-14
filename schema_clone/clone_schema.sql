@@ -35,6 +35,8 @@ DECLARE
    name_tag       TEXT;
    status         boolean;
 BEGIN
+   SET log_min_message TO 'Notice';
+  
    SELECT dirpath INTO dir_path FROM pg_catalog.edb_dir WHERE dirname = dir_name;
 
    EXECUTE src_db_connection_sql INTO rec;
@@ -48,6 +50,11 @@ BEGIN
    tgt_passwd    := rec.PASSWORD;
    name_tag := to_char(now(),'YYYYDDMMHH24MISS');
 
+   IF EXISTS( SELECT 1 FROM pg_namespace WHERE nspname = tgt_schema) THEN
+      RAISE EXCEPTION 'schema % already exists in database',tgt_schema;
+      RETURN false;
+   END IF;
+   
    PERFORM dblink_connect( name_tag, src_conn_info ||' user='|| src_user_name||' password='|| src_passwd);
 
    SELECT snapshot_id INTO db_snapshot_id FROM dblink(name_tag,'BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ; SELECT pg_export_snapshot();') foo(snapshot_id TEXT);
