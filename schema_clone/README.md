@@ -1,7 +1,7 @@
 # Documentation:
 
 clone_remote_schema is a module written in plpgsql function and specifically made for EPAS version 9.5(Enterprise Postgres Advanced Server).
-Using this function user can clone the remote schema to target database. This module consists of following three functions:
+Using this function user can clone the remote schema consistent snapshot to target database. This module consists of following three functions:
 
 1. clone_pre_data_ddl: function generate pre-data ddls using pg_dump command.
 2. clone_post_data_ddl: function generate post-data ddls using pg_dump command.
