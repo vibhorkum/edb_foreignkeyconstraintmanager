@@ -106,4 +106,7 @@ NOTICE:  disconnect
 ## TODO:
 * remove the dependencies of linux
 * if possible convert pg_dump and psql libraries to use
+* Use pg_background for local load instead of dblink
+* Check for WIndows and Linux Directories
+* Replace sed with more elegant rename option
 
