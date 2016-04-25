@@ -9,7 +9,7 @@ AS $function$
 BEGIN
 
 --  If Parent is non-partition and child is partitioned, then use ALTER TABLE add constraint.
-IF EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(parent_table_name::TEXT)) THEN
+IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(parent_table_name::TEXT)) THEN
 
   -- alter table ALTER TABLE PARENT ADD  FOREIGN KEY(T) REFERENCES CHILD(T);
   EXECUTE 'ALTER TABLE '|| parent_table_name || ' ADD  FOREIGN KEY(' || array_to_string(parent_table_column_names, ',') || ') 
