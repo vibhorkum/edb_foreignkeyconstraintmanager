@@ -57,7 +57,7 @@ select create_fk_constraint('sales', '{order_no}', 'sales_q1_2012', '{order_no}'
 \qecho "################# create constrain on non partitioned parent ###################"
 \qecho "################################################################################"
 
-select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales', '{order_no}', true);
+select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales_q2_2012', '{order_no}', true);
 
 \d+ sales
 \d+ sales_q1_americas
