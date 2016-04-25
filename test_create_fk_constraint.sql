@@ -47,15 +47,17 @@ PARTITION BY RANGE(date)
 
 \i partition_fk_management.sql
 
-\echo "create constraint on partitioned child"
+\qecho "################ creating constraint on partitioned child ######################"
+\qecho "################################################################################"
 
 select create_fk_constraint('sales', '{order_no}', 'sales_q1_2012', '{order_no}', true);
 \d+ sales
 \d+ sales_q1_2012
 
-\echo "create constrain on non partitioned child"
+\qecho "################# create constrain on non partitioned parent ###################"
+\qecho "################################################################################"
 
-select create_fk_constraint('sales', '{order_no}', 'sales_q1_americas', '{order_no}', true);
+select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales', '{order_no}', true);
 
 \d+ sales
 \d+ sales_q1_americas
