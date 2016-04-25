@@ -12,7 +12,7 @@ BEGIN
 IF EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(parent_table_name::TEXT)) THEN
 
   -- alter table ALTER TABLE PARENT ADD  FOREIGN KEY(T) REFERENCES CHILD(T);
-  EXECUTE 'ALTER TABLE PARENT ADD  FOREIGN KEY(' || array_to_string(parent_table_column_names, '.') || ') 
+  EXECUTE 'ALTER TABLE '|| parent_table_name || ' ADD  FOREIGN KEY(' || array_to_string(parent_table_column_names, ',') || ') 
   REFERENCES '|| child_table_name || '('|| array_to_string(child_table_column_names, ',') || ')';
 ELSE
   --parent table
