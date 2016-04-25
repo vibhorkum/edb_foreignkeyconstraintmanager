@@ -16,9 +16,10 @@ IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = 
   REFERENCES '|| child_table_name || '('|| array_to_string(child_table_column_names, ',') || ')';
 ELSE
   --parent table
-  EXECUTE 'DROP TRIGGER IF EXISTS fk_constraint on ' || parent_table_name;
-
-  EXECUTE 'CREATE TRIGGER fk_constraint BEFORE DELETE OR UPDATE ON ' || parent_table_name || ' FOR EACH ROW
+  IF EXISTS (select 1 from pg_trigger where not tgisinternal and tgrelid = parent_table_name::regclass and tgname = 'fk_constraint_' ||parent_table_name) THEN
+    RAISE unique_violation USING MESSAGE = 'a trigger named fk_constraint_' || parent_table_name || ' already exists';
+  END IF;
+  EXECUTE 'CREATE TRIGGER fk_constraint_' || parent_table_name || ' BEFORE DELETE OR UPDATE ON ' || parent_table_name || ' FOR EACH ROW
   EXECUTE PROCEDURE
   check_foreign_key (
     1,  			-- number of tables that foreign keys need to be checked
@@ -32,10 +33,11 @@ ELSE
 							-- must be the same.
 END IF;
 --child table
+IF EXISTS (select 1 from pg_trigger where not tgisinternal and tgrelid = child_table_name::regclass and tgname = 'fk_constraint_' || child_table_name) THEN
+    RAISE unique_violation USING MESSAGE = 'a trigger named fk_constraint_' || child_table_name || ' already exists';
+  END IF;
 
-EXECUTE 'DROP TRIGGER IF EXISTS fk_constraint on ' || child_table_name;
-
-EXECUTE 'CREATE TRIGGER fk_constraint BEFORE INSERT OR UPDATE ON ' || child_table_name || ' FOR EACH ROW
+EXECUTE 'CREATE TRIGGER fk_constraint_' || child_table_name || ' BEFORE INSERT OR UPDATE ON ' || child_table_name || ' FOR EACH ROW
 EXECUTE PROCEDURE
 check_primary_key (
   ' || array_to_string(child_table_column_names, ',') || ',	-- name of foreign key column in triggered (B) table. You may use as
