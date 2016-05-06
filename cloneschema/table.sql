@@ -1,4 +1,3 @@
---  SELECT * from pg_get_viewdef('information_schema.sequences');
 CREATE OR REPLACE FUNCTION edb_util.get_sequence_declaration(
   relid oid
 )
@@ -6,7 +5,7 @@ RETURNS text
 AS $$
 BEGIN
   RETURN (
-    SELECT 'CREATE SEQUENCE ' || c.relname
+    SELECT 'CREATE SEQUENCE ' || quote_ident(c.relname)
       || ' INCREMENT BY ' || parm.increment::text
       || ' MINVALUE ' || parm.minimum_value::text
       || ' MAXVALUE ' || parm.maximum_value::text
@@ -24,6 +23,7 @@ $$ LANGUAGE plpgsql VOLATILE
 
 CREATE OR REPLACE FUNCTION edb_util.copy_sequence(
   source_schema text, target_schema text
+  , verbose_bool boolean DEFAULT FALSE
 )
 RETURNS boolean AS $$
 DECLARE rec record;
@@ -31,21 +31,23 @@ BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
   FOR rec in
-    SELECT edb_util.get_sequence_declaration(c.oid) as decl
+    SELECT replace(
+      edb_util.get_sequence_declaration(c.oid)
+      , source_schema || '.', target_schema || '.'
+    )  as decl
+      , c.relname as name
       from pg_class as c
      WHERE c.relkind = 'S'::"char"
        and c.relnamespace = source_schema::regnamespace
   LOOP
-    RAISE NOTICE '%', replace(rec.decl, source_schema || '.', target_schema || '.');
-    EXECUTE replace(rec.decl, source_schema || '.', target_schema || '.');
+    RAISE NOTICE '%', rec.decl;
+    IF verbose_bool THEN
+      RAISE NOTICE '%', rec.decl;
+    END IF;
+    EXECUTE rec.decl;
   END LOOP;
 
   RETURN TRUE;
-
-EXCEPTION WHEN duplicate_object THEN
-  RAISE NOTICE 'Duplicate object';
--- WHEN others THEN
---   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql VOLATILE
 ;
@@ -61,18 +63,21 @@ AS $$
 BEGIN
   RETURN (
     with attrs as (
-      SELECT c.relname
-          , a.attname
+      SELECT quote_ident(c.relname) as relname
+          , quote_ident(a.attname) as attname
           , a.attnotnull
           , format_type(a.atttypid, a.atttypmod) as attypdecl
+          , (SELECT cl.collname
+            FROM pg_catalog.pg_collation as cl
+            WHERE a.attcollation > 0
+              AND cl.oid = a.attcollation
+              AND cl.collname <> 'default'
+          ) as attcollation
+          -- defaults
           , (SELECT substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid) for 128)
             FROM pg_catalog.pg_attrdef d
             WHERE d.adrelid = a.attrelid AND d.adnum = a.attnum AND a.atthasdef
           ) as attdef
-          , (SELECT cl.collname
-            FROM pg_catalog.pg_collation as cl
-            WHERE a.attcollation > 0 AND cl.oid = a.attcollation
-          ) as attcollation
         from pg_catalog.pg_class as c
       LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
       WHERE c.oid = relid
@@ -80,24 +85,32 @@ BEGIN
         and NOT a.attisdropped
       ORDER BY a.attnum
     )
-  , table_opts as (
-    SELECT t.spcname
-    FROM pg_catalog.pg_tablespace as t
-    WHERE EXISTS ( SELECT 1
-      from pg_class where reltablespace = t.oid
-      )
+  , rel as (
+    SELECT quote_ident(c.relname) as relname
+      , CASE c.relpersistence
+          WHEN 'u' then 'UNLOGGED ' else '' END as persistence
+      , CASE when on_tblspace and t.spcname is NOT NULL
+          then ' TABLESACE ' || t.spcname else '' END as tblspace
+    FROM pg_catalog.pg_class as c
+    LEFT JOIN pg_catalog.pg_tablespace as t
+      on c.reltablespace = t.oid
+    WHERE c.oid = relid
   )
-  SELECT 'CREATE TABLE ' || quote_ident(a.relname)
-    || ' (' || string_agg(
-      quote_ident(a.attname) || ' ' || a.attypdecl
-      || coalesce( ' '
-        || CASE when a.attdef is NULL then ''
-          else 'DEFAULT (' || a.attdef || ')' END
-        , '')   -- ('source.some_table_this_id_seq'::regclass)
-      || CASE when a.attnotnull is TRUE then ' NOT NULL' else '' END
-      ,', ') || ');'  -- tablespace, table storage options
+  SELECT 'CREATE ' || r.persistence
+    || 'TABLE ' || r.relname
+    || ' ('
+      || string_agg(
+        a.attname || ' ' || a.attypdecl
+      || CASE when a.attcollation is NULL then ''
+          else ' COLLATE ' || a.attcollation END
+      || CASE when a.attdef is NULL then ''
+          else ' DEFAULT (' || a.attdef || ')' END
+      || CASE when a.attnotnull then ' NOT NULL' else '' END
+      , ', ')
+    || ')' || r.tblspace || ';'
     from attrs as a
-  GROUP BY a.relname
+    JOIN rel as r USING (relname)
+  GROUP BY r.persistence, r.relname, r.tblspace
 );
 END;
 $$ LANGUAGE plpgsql VOLATILE
@@ -105,30 +118,34 @@ $$ LANGUAGE plpgsql VOLATILE
 
 CREATE OR REPLACE FUNCTION edb_util.copy_table_simple(
   source_schema text, target_schema text
-  , on_tblspace boolean default FALSE
+  , on_tblspace boolean DEFAULT FALSE
+  , verbose_bool boolean DEFAULT FALSE
 )
--- simple copies table definition without indexes, constraints, or triggers
+-- copies table definition without indexes, constraints, or triggers
 RETURNS boolean AS $$
 DECLARE rec record;
 BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
   FOR rec in
-    SELECT edb_util.get_table_declaration(c.oid, on_tblspace) as decl
+    SELECT replace(
+        edb_util.get_table_declaration(c.oid, on_tblspace)
+        , source_schema || '.', target_schema || '.'
+      ) as decl
+      , c.relname as name
       from pg_class as c
      WHERE c.relkind = 'r'::"char"
        and c.relnamespace = source_schema::regnamespace
   LOOP
-    RAISE NOTICE '%', replace(rec.decl, source_schema || '.', target_schema || '.');
-    EXECUTE replace(rec.decl, source_schema || '.', target_schema || '.');
+    RAISE NOTICE '%', rec.name;
+    IF verbose_bool THEN
+      RAISE NOTICE '%', rec.decl;
+    END IF;
+    EXECUTE rec.decl;
   END LOOP;
 
   RETURN TRUE;
 
-EXCEPTION WHEN duplicate_object THEN
-  RAISE NOTICE 'Duplicate object';
--- WHEN others THEN
---   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql VOLATILE
 ;
@@ -184,6 +201,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE
 ;
+
 
 CREATE OR REPLACE FUNCTION edb_util.get_constraint_declaration(
   relid oid

@@ -1,4 +1,3 @@
--- SELECT array_to_string(enum_range(NULL, NULL::tkcsowner.card_type), ',');
 CREATE OR REPLACE FUNCTION edb_util.get_enum_declaration(relid oid)
 RETURNS text
 AS $$
@@ -23,6 +22,7 @@ $$ LANGUAGE plpgsql VOLATILE
 
 CREATE OR REPLACE FUNCTION edb_util.copy_enum(
   source_schema text, target_schema text
+  , verbose_bool boolean DEFAULT FALSE
 )
 RETURNS boolean
 AS $$
@@ -31,27 +31,27 @@ BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
   FOR rec in
-    SELECT edb_util.get_enum_declaration(x.oid) as decl
+    SELECT replace(
+      edb_util.get_enum_declaration(x.oid)
+      , source_schema || '.', target_schema || '.'
+    ) as decl
+      , x.oid::regtype as name
     from (
       SELECT DISTINCT t.oid
         from pg_enum as e
       LEFT JOIN pg_type as t on e.enumtypid = t.oid
-       WHERE EXISTS ( SELECT 1
-           from pg_namespace WHERE oid = t.typnamespace
-            and nspname = source_schema
-           )
+       WHERE t.typnamespace = source_schema::regnamespace
     ) as x
   LOOP
-    RAISE NOTICE '%', rec.decl;
+    RAISE NOTICE 'COPYING ENUM %', rec.name;
+    IF verbose_bool THEN
+      RAISE NOTICE '%', rec.decl;
+    END IF;
     EXECUTE rec.decl;
-    --EXCEPTION WHEN duplicate_object THEN
-      --RAISE NOTICE 'duplicate';
   END LOOP;
 
   RETURN TRUE;
 
--- WHEN others THEN
---   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql VOLATILE
 ;
