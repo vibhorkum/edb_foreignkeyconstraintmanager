@@ -1,10 +1,11 @@
--- views
 CREATE OR REPLACE FUNCTION edb_util.copy_view(
   source_schema text, target_schema text
   , verbose_bool boolean DEFAULT FALSE
 )
 RETURNS boolean AS $$
 DECLARE rec record;
+  rec_success boolean;
+  all_success boolean DEFAULT TRUE;
 BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
@@ -40,40 +41,19 @@ BEGIN
         ORDER BY ancestors
       ) as c
   LOOP
-    RAISE NOTICE 'CREATING VIEW %', rec.name;
-    IF verbose_bool THEN
-      RAISE NOTICE '%', rec.decl;
+    SELECT * from edb_util.object_create_runner(
+      rec.name, rec.decl, 'VIEW', FALSE, verbose_bool)
+        INTO rec_success;
+
+    IF NOT rec_success THEN
+      all_success := FALSE;
     END IF;
-    EXECUTE rec.decl;
   END LOOP;
 
-  RETURN TRUE;
+  RETURN all_success;
 END;
-$$ LANGUAGE plpgsql VOLATILE
+$$ LANGUAGE plpgsql VOLATILE STRICT
 ;
-
-    SELECT 'CREATE VIEW ' || quote_ident(c.relname) || ' AS '
-      || replace(
-        pg_catalog.pg_get_viewdef(c.oid)
-        , source_schema || '.', target_schema || '.'
-      ) || ';'
-     as decl
-     , c.relname as name
-      from pg_catalog.pg_class as c
-     WHERE c.relkind = 'v'::"char"
-       and c.relnamespace = source_schema::regnamespace
-  LOOP
-    RAISE NOTICE 'CREATING VIEW %', rec.name;
-    IF verbose_bool THEN
-      RAISE NOTICE '%', rec.decl;
-    END IF;
-    EXECUTE rec.decl;
-  END LOOP;
-
-  RETURN TRUE;
- END;
- $$ LANGUAGE plpgsql VOLATILE
- ;
 
 -- -- materialized views
 --
