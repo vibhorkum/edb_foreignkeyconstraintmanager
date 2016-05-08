@@ -20,7 +20,7 @@ BEGIN
   GROUP BY a.relname
 );
 END;
-$$ LANGUAGE plpgsql VOLATILE
+$$ LANGUAGE plpgsql VOLATILE STRICT
 ;
 
 CREATE OR REPLACE FUNCTION edb_util.copy_datatype(
@@ -51,5 +51,5 @@ BEGIN
 
   RETURN TRUE;
 END;
-$$ LANGUAGE plpgsql VOLATILE
+$$ LANGUAGE plpgsql VOLATILE STRICT
 ;

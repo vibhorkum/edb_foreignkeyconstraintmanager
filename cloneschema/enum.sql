@@ -17,7 +17,7 @@ BEGIN
   GROUP BY l.typname
 );
 END;
-$$ LANGUAGE plpgsql VOLATILE
+$$ LANGUAGE plpgsql VOLATILE STRICT
 ;
 
 CREATE OR REPLACE FUNCTION edb_util.copy_enum(
@@ -53,5 +53,5 @@ BEGIN
   RETURN TRUE;
 
 END;
-$$ LANGUAGE plpgsql VOLATILE
+$$ LANGUAGE plpgsql VOLATILE STRICT
 ;
