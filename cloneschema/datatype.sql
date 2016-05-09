@@ -1,26 +1,23 @@
 CREATE OR REPLACE FUNCTION edb_util.get_datatype_declaration(relid oid)
 RETURNS text
 AS $$
-BEGIN
-  RETURN (
-    with attrs as (
-      SELECT quote_ident(c.relname) as relname
-          , quote_ident(a.attname) as attname
-          , format_type(a.atttypid, a.atttypmod) as atttypdecl
-        from pg_catalog.pg_class as c
-      LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
-      WHERE c.oid = relid
-        and a.attnum > 0
-        and NOT a.attisdropped
-      ORDER BY a.attnum
-    )
+  with attrs as (
+    SELECT quote_ident(c.relname) as relname
+        , quote_ident(a.attname) as attname
+        , format_type(a.atttypid, a.atttypmod) as atttypdecl
+      from pg_catalog.pg_class as c
+    LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
+    WHERE c.oid = relid
+      and a.attnum > 0
+      and NOT a.attisdropped
+    ORDER BY a.attnum
+  )
   SELECT 'CREATE TYPE ' || quote_ident(a.relname)
     || ' AS (' || string_agg(a.attname || ' ' || a.atttypdecl,', ') || ');'
     from attrs as a
   GROUP BY a.relname
-);
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT
+  ;
+$$ LANGUAGE sql VOLATILE STRICT
 ;
 
 CREATE OR REPLACE FUNCTION edb_util.copy_datatype(
@@ -29,6 +26,8 @@ CREATE OR REPLACE FUNCTION edb_util.copy_datatype(
 )
 RETURNS boolean AS $$
 DECLARE rec record;
+  rec_success boolean;
+  all_success boolean DEFAULT TRUE;
 BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
@@ -42,14 +41,16 @@ BEGIN
      WHERE c.relkind = 'c'
        and c.relnamespace = source_schema::regnamespace
   LOOP
-    RAISE NOTICE 'COPYING DATATYPE %', rec.name;
-    IF verbose_bool THEN
-      RAISE NOTICE '%', rec.decl;
+    SELECT * from edb_util.object_create_runner(
+      rec.name, rec.decl, 'DATATYPE', FALSE, verbose_bool)
+        INTO rec_success;
+
+    IF NOT rec_success THEN
+      all_success := FALSE;
     END IF;
-    EXECUTE rec.decl;
   END LOOP;
 
-  RETURN TRUE;
+  RETURN all_success;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
