@@ -571,7 +571,7 @@ BEGIN
     ) as decl
       , tg.tgname as name
       from pg_catalog.pg_trigger as tg
-     WHERE (NOT tg.tgisinternal 
+     WHERE (NOT tg.tgisinternal
         OR (tg.tgisinternal AND tg.tgenabled = 'D'))
        and EXISTS ( SELECT 1 from pg_catalog.pg_class
        WHERE oid = tg.tgrelid
