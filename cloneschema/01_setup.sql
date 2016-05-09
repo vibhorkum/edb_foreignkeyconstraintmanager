@@ -1,8 +1,8 @@
-CREATE SCHEMA edb_util AUTHORIZATION enterprisedb;
+CREATE SCHEMA IF NOT EXISTS edb_util AUTHORIZATION enterprisedb;
 
-CREATE TYPE edb_util.declaration_type AS (name text, decl text);
+CREATE OR REPLACE TYPE edb_util.declaration_type AS (name text, decl text);
 
-CREATE UNLOGGED TABLE edb_util.tracking (
+CREATE UNLOGGED TABLE IF NOT EXISTS edb_util.tracking (
   objname text NOT NULL
 , objtype text NOT NULL
 , decl text
