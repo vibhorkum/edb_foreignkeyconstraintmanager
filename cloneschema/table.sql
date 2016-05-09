@@ -69,11 +69,6 @@ AS $$
             AND cl.oid = a.attcollation
             AND cl.collname <> 'default'
         ) as attcollation
-        -- defaults
-        , (SELECT substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid) for 128)
-          FROM pg_catalog.pg_attrdef d
-          WHERE d.adrelid = a.attrelid AND d.adnum = a.attnum AND a.atthasdef
-        ) as attdef
       from pg_catalog.pg_class as c
     LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
     WHERE c.oid = relid
@@ -88,7 +83,7 @@ AS $$
       , CASE when on_tblspace and t.spcname is NOT NULL
           then ' TABLESACE ' || t.spcname else '' END as tblspace
     FROM pg_catalog.pg_class as c
-    LEFT JOIN pg_catalog.pg_tablespace as t
+    LEFT join pg_catalog.pg_tablespace as t
       on c.reltablespace = t.oid
     WHERE c.oid = relid
   )
@@ -99,8 +94,8 @@ AS $$
         a.attname || ' ' || a.attypdecl
       || CASE when a.attcollation is NULL then ''
           else ' COLLATE ' || a.attcollation END
-      || CASE when a.attdef is NULL then ''
-          else ' DEFAULT (' || a.attdef || ')' END
+      -- || CASE when a.attdef is NULL then ''
+      --     else ' DEFAULT (' || a.attdef || ')' END
       || CASE when a.attnotnull then ' NOT NULL' else '' END
       , ', ')
     || ')' || r.tblspace || ';'
@@ -237,14 +232,37 @@ $$ LANGUAGE plpgsql VOLATILE STRICT
 CREATE OR REPLACE FUNCTION edb_util.get_constraint_declaration(
   relid oid
 )
-RETURNS SETOF text
+RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_class as c
   LEFT JOIN pg_catalog.pg_constraint as cn on c.oid = cn.conrelid
   WHERE c.oid = relid
+  ;
+$$ LANGUAGE sql VOLATILE STRICT
+;
+
+CREATE OR REPLACE FUNCTION edb_util.get_column_default(
+  relid oid
+)
+RETURNS SETOF edb_util.declaration_type
+AS $$
+  SELECT a.attname
+    , 'ALTER TABLE ' || quote_ident(relname) || ' ALTER COLUMN '
+      || quote_ident(a.attname) || ' SET DEFAULT '
+      || substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid) for 128) || ';'
+    FROM pg_catalog.pg_class as c
+    join pg_catalog.pg_attrdef as d
+      on c.oid = d.adrelid
+    join pg_catalog.pg_attribute as a
+      on d.adrelid = a.attrelid AND d.adnum = a.attnum
+   WHERE c.oid = relid
+     and a.atthasdef
+     and a.attnum > 0
+     and NOT a.attisdropped
+  ORDER BY a.attnum
   ;
 $$ LANGUAGE sql VOLATILE STRICT
 ;
