@@ -1,9 +1,9 @@
 CREATE SCHEMA edb_util AUTHORIZATION enterprisedb;
 
-CREATE TYPE edb_util.declaration_type AS (name name, decl text);
+CREATE TYPE edb_util.declaration_type AS (name text, decl text);
 
 CREATE UNLOGGED TABLE edb_util.tracking (
-  objname name NOT NULL
+  objname text NOT NULL
 , objtype text NOT NULL
 , decl text
 , create_attempts integer NOT NULL DEFAULT (1)
@@ -15,7 +15,7 @@ CREATE UNLOGGED TABLE edb_util.tracking (
 ;
 
 CREATE OR REPLACE FUNCTION edb_util.object_create_runner(
-  object_name name, object_decl text
+  object_name text, object_decl text
   , object_type text DEFAULT ''
   , ignore_duplicates boolean DEFAULT FALSE
   , verbose_bool boolean DEFAULT FALSE
