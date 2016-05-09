@@ -55,7 +55,7 @@ BEGIN
   END LOOP;
 
   RETURN all_success;
-  
+
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
