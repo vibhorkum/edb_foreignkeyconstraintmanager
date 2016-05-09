@@ -1,23 +1,20 @@
 CREATE OR REPLACE FUNCTION edb_util.get_enum_declaration(relid oid)
 RETURNS text
 AS $$
-BEGIN
-  RETURN (
-    with lbls as (
-      SELECT t.typname
-          , e.enumlabel
-        from pg_catalog.pg_enum as e
-      LEFT join pg_catalog.pg_type as t on e.enumtypid = t.oid
-      WHERE e.enumtypid = relid
-      ORDER BY e.enumsortorder
-    )
+  with lbls as (
+    SELECT t.typname
+        , e.enumlabel
+      from pg_catalog.pg_enum as e
+    LEFT join pg_catalog.pg_type as t on e.enumtypid = t.oid
+    WHERE e.enumtypid = relid
+    ORDER BY e.enumsortorder
+  )
   SELECT 'CREATE TYPE ' || l.typname
     || ' AS ENUM (' || string_agg(quote_literal(l.enumlabel), ', ') || ');'
     from lbls as l
   GROUP BY l.typname
-);
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT
+  ;
+$$ LANGUAGE sql VOLATILE STRICT
 ;
 
 CREATE OR REPLACE FUNCTION edb_util.copy_enum(
@@ -37,7 +34,7 @@ BEGIN
       edb_util.get_enum_declaration(x.oid)
       , source_schema || '.', target_schema || '.'
     ) as decl
-      , x.oid::regtype as name
+      , x.oid::regtype::text as name
     from (
       SELECT DISTINCT t.oid
         from pg_enum as e
