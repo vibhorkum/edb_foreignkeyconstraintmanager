@@ -157,60 +157,60 @@ BEGIN
     RETURN FALSE;
   END IF;
 
-  -- -- create constraints, indexes, triggers, rules
-  -- SELECT edb_util.copy_table_constraint(
-  --   source_schema_name, target_schema_name, verbose_bool
-  -- ) INTO status_bool;
-  -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
-  --     , source_schema_name, target_schema_name;
-  --   RETURN FALSE;
-  -- END IF;
-  --
-  -- SELECT edb_util.copy_table_default(
-  --   source_schema_name, target_schema_name, verbose_bool
-  -- ) INTO status_bool;
-  -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy TABLE DEFAULT from % to %. ROLLING BACK CHANGES'
-  --     , source_schema_name, target_schema_name;
-  --   RETURN FALSE;
-  -- END IF;
-  --
-  -- SELECT edb_util.copy_table_index(
-  --   source_schema_name, target_schema_name, verbose_bool
-  -- ) INTO status_bool;
-  -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
-  --     , source_schema_name, target_schema_name;
-  --   RETURN FALSE;
-  -- END IF;
-  --
-  -- SELECT edb_util.copy_table_trigger(
-  --   source_schema_name, target_schema_name, verbose_bool
-  -- ) INTO status_bool;
-  -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
-  --     , source_schema_name, target_schema_name;
-  --   RETURN FALSE;
-  -- END IF;
-  --
-  -- SELECT edb_util.copy_table_rule(
-  --   source_schema_name, target_schema_name, verbose_bool
-  -- ) INTO status_bool;
-  -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
-  --     , source_schema_name, target_schema_name;
-  --   RETURN FALSE;
-  -- END IF;
+  -- create constraints, indexes, triggers, rules
+  SELECT edb_util.copy_table_constraint(
+    source_schema_name, target_schema_name, verbose_bool
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  SELECT edb_util.copy_table_default(
+    source_schema_name, target_schema_name, verbose_bool
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TABLE DEFAULT from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  SELECT edb_util.copy_table_index(
+    source_schema_name, target_schema_name, verbose_bool
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  SELECT edb_util.copy_table_trigger(
+    source_schema_name, target_schema_name, verbose_bool
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  SELECT edb_util.copy_table_rule(
+    source_schema_name, target_schema_name, verbose_bool
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TABLE INDEX from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
 
   RETURN TRUE;
 
-EXCEPTION WHEN others THEN
-  RAISE NOTICE 'Encoutered exception in copy_schema.';
-  RAISE NOTICE 'ROLLING BACK CHANGES';
-  RAISE NOTICE '% %', sqlstate, sqlerrm;
-
-  RETURN FALSE;
+-- EXCEPTION WHEN others THEN
+--   RAISE NOTICE 'Encoutered exception in copy_schema.';
+--   RAISE NOTICE 'ROLLING BACK CHANGES';
+--   RAISE NOTICE '% %', sqlstate, sqlerrm;
+--
+--   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
