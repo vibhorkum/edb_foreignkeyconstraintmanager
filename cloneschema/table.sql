@@ -238,7 +238,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_class as c
@@ -253,7 +253,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_check_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -269,7 +269,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_unique_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -285,7 +285,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_pk_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -301,7 +301,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_exclusion_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -317,7 +317,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_constraint_trigger_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -333,7 +333,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_non_fk_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -349,7 +349,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_fk_constraint_declaration(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT cn.conname, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
+  SELECT cn.conname::text, 'ALTER TABLE ' || quote_ident(c.relname) || ' ADD CONSTRAINT '
     || quote_ident(cn.conname) || ' '
     || pg_get_constraintdef(cn.oid) || ';'
     from pg_catalog.pg_class as c
@@ -428,7 +428,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_column_default(
 )
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT a.attname
+  SELECT a.attname::text
     , 'ALTER TABLE ' || quote_ident(relname) || ' ALTER COLUMN '
       || quote_ident(a.attname) || ' SET DEFAULT '
       || substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid) for 128) || ';'
@@ -497,7 +497,7 @@ CREATE OR REPLACE FUNCTION edb_util.get_index_declaration(
 -- declarations for all non-unique indexes and non-pk indexes
 RETURNS SETOF edb_util.declaration_type
 AS $$
-  SELECT (SELECT relname from pg_class WHERE oid = i.indexrelid)
+  SELECT (SELECT relname from pg_class WHERE oid = i.indexrelid)::text
     , pg_catalog.pg_get_indexdef(i.indexrelid)
     from pg_catalog.pg_class as c
   LEFT JOIN pg_catalog.pg_index as i
