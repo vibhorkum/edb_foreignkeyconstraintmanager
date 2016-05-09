@@ -1,5 +1,7 @@
 CREATE SCHEMA edb_util AUTHORIZATION enterprisedb;
 
+CREATE TYPE edb_util.declaration_type AS (name name, decl text);
+
 CREATE UNLOGGED TABLE edb_util.tracking (
   objname name NOT NULL
 , objtype text NOT NULL
@@ -24,38 +26,34 @@ BEGIN
 
   EXECUTE object_decl;
 
-  IF EXISTS ( SELECT 1 from edb_util.tracking as t
-    WHERE t.objname = objname AND t.objtype = objtype
-  ) THEN
+  BEGIN
+    INSERT INTO edb_util.tracking(objname, objtype, is_created)
+    VALUES(object_name, object_type, TRUE)
+    ;
+  EXCEPTION WHEN unique_violation THEN
     UPDATE edb_util.tracking as t
        SET t.is_created = TRUE
          , t.create_attempts = t.create_attempts + 1
      WHERE t.objname = object_name
        and t.objtype = object_type
     ;
-  ELSE
-    INSERT INTO edb_util.tracking(objname, objtype, is_created)
-    VALUES(object_name, object_type, TRUE)
-    ;
-  END IF;
+  END;
   RETURN TRUE;
 
 EXCEPTION WHEN duplicate_object THEN
   RAISE NOTICE '%', sqlerrm;
 
-  IF EXISTS ( SELECT 1 from edb_util.tracking as t
-    WHERE t.objname = object_name AND t.objtype = object_type
-  ) THEN
+  BEGIN
+    INSERT INTO edb_util.tracking(objname, objtype, decl, errmessage)
+    VALUES(object_name, object_type, object_decl, sqlerrm)
+    ;
+  EXCEPTION WHEN unique_violation THEN
     UPDATE edb_util.tracking as t
        SET t.errmessage = sqlerrm
          , t.create_attempts = t.create_attempts + 1
      WHERE t.objname = object_name AND t.objtype = object_type
     ;
-  ELSE
-    INSERT INTO edb_util.tracking(objname, objtype, decl, errmessage)
-    VALUES(object_name, object_type, object_decl, sqlerrm)
-    ;
-  END IF;
+  END;
 
   IF ignore_duplicates THEN
     RETURN TRUE;
@@ -65,20 +63,18 @@ EXCEPTION WHEN duplicate_object THEN
 WHEN others THEN
   RAISE NOTICE '% %', sqlstate, sqlerrm;
 
-  IF EXISTS ( SELECT 1 from edb_util.tracking as t
-    WHERE t.objname = object_name AND t.objtype = object_type
-  ) THEN
+  BEGIN
+    INSERT INTO edb_util.tracking(objname, objtype, decl, errmessage)
+    VALUES(object_name, object_type, object_decl
+      , sqlstate::text || ' ' || sqlerrm)
+    ;
+  EXCEPTION WHEN unique_violation THEN
     UPDATE edb_util.tracking as t
        SET t.errmessage = sqlerrm || ' ' || sqlstate::text
          , t.create_attempts = t.create_attempts + 1
      WHERE t.objname = object_name AND t.objtype = object_type
     ;
-  ELSE
-    INSERT INTO edb_util.tracking(objname, objtype, decl, errmessage)
-    VALUES(object_name, object_type, object_decl
-      , sqlerrm || ' ' || sqlstate::text)
-    ;
-  END IF;
+  END;
 
   RETURN FALSE;
 END;
