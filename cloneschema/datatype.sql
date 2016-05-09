@@ -34,7 +34,7 @@ BEGIN
   FOR rec in
     SELECT replace(
       edb_util.get_datatype_declaration(c.oid)
-      , source_Schema || '.', target_schema || '.'
+      , source_schema || '.', target_schema || '.'
     ) as decl
       , c.relname as name
       from pg_class as c
