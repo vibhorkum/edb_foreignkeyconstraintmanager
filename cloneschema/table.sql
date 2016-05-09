@@ -477,7 +477,7 @@ BEGIN
      ) as x
   LOOP
     SELECT * from edb_util.object_create_runner(
-      rec.name, rec.decl, 'FK CONSTRAINT', FALSE, verbose_bool)
+      rec.name, rec.decl, 'DEFAULT', FALSE, verbose_bool)
         INTO rec_success;
 
     IF NOT rec_success THEN
