@@ -27,6 +27,8 @@ CREATE OR REPLACE FUNCTION edb_util.copy_enum(
 RETURNS boolean
 AS $$
 DECLARE rec record;
+  rec_success boolean;
+  all_success boolean DEFAULT TRUE;
 BEGIN
   PERFORM set_config('search_path', target_schema, FALSE);
 
@@ -43,15 +45,17 @@ BEGIN
        WHERE t.typnamespace = source_schema::regnamespace
     ) as x
   LOOP
-    RAISE NOTICE 'COPYING ENUM %', rec.name;
-    IF verbose_bool THEN
-      RAISE NOTICE '%', rec.decl;
+    SELECT * from edb_util.object_create_runner(
+      rec.name, rec.decl, 'ENUM', FALSE, verbose_bool)
+        INTO rec_success;
+
+    IF NOT rec_success THEN
+      all_success := FALSE;
     END IF;
-    EXECUTE rec.decl;
   END LOOP;
 
-  RETURN TRUE;
-
+  RETURN all_success;
+  
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
