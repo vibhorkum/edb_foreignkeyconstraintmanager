@@ -2,7 +2,9 @@
 
 This package provides functionality to deep copy a complete schema, including: tables, table data, indexes, functions, packages, procedures, sequences, data types, and all other objects from a schema on a specified remote server to a target schema on the local server.
 
-In order to function this extension requires that the following two extensions already be installed on the local server:
+### Prerequisites
+
+The following two extensions must already be installed on the local server:
 * dblink
 * postgres_fdw
 
@@ -25,6 +27,8 @@ CREATE USER MAPPING FOR target SERVER a_foreign_server
 GRANT USAGE ON FOREIGN SERVER a_foreign_server TO target
 ;
 ```
+
+### Usage
 
 The function has the following definition: ```
 CREATE OR REPLACE FUNCTION edb_util.remotecopyschema(
