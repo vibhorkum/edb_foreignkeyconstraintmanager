@@ -83,6 +83,7 @@ BEGIN
     END IF;
   END LOOP;
 
+  PERFORM dblink_disconnect(connection_name);
   RETURN all_success;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
