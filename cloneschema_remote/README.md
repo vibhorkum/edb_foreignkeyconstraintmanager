@@ -30,7 +30,8 @@ GRANT USAGE ON FOREIGN SERVER a_foreign_server TO target
 
 ### Usage
 
-The function has the following definition: ```
+The function has the following definition:
+```
 CREATE OR REPLACE FUNCTION edb_util.remotecopyschema(
   foreign_server_name text
   , source_schema_name text, target_schema_name text
