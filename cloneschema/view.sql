@@ -13,7 +13,7 @@ BEGIN
     with RECURSIVE viewing AS (
       SELECT c.oid as relid, c.relname, NULL::oid as refobjid
         , 0 as ancestors
-        from pg_class as c
+        from pg_catalog.pg_class as c
        WHERE c.relkind = 'v'::"char"
          and c.relnamespace = source_schema::regnamespace
       UNION ALL
