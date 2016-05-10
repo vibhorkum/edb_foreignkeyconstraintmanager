@@ -87,6 +87,7 @@ CREATE OR REPLACE FUNCTION edb_util.copy_remote_table_simple(
   foreign_server_name text, source_schema text, target_schema text
   , on_tblspace boolean DEFAULT FALSE
   , verbose_bool boolean DEFAULT FALSE
+  , snapshot_id text DEFAULT ''
 )
 RETURNS boolean AS $$
 DECLARE rec record;
@@ -104,6 +105,7 @@ BEGIN
     SELECT replace(
       edb_util.get_remote_table_declaration(
         foreign_server_name, rmot.oid, on_tblspace
+        , snapshot_id
       ), source_schema || '.', target_schema || '.'
     ) as decl
     , rmot.name
