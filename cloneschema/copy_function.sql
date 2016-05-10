@@ -204,13 +204,6 @@ BEGIN
   END IF;
 
   RETURN TRUE;
-
--- EXCEPTION WHEN others THEN
---   RAISE NOTICE 'Encoutered exception in copy_schema.';
---   RAISE NOTICE 'ROLLING BACK CHANGES';
---   RAISE NOTICE '% %', sqlstate, sqlerrm;
---
---   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
