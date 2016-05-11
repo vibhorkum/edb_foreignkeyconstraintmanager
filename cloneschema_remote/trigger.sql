@@ -31,7 +31,7 @@ END;
 $$ LANGUAGE plpgsql VOLATILE
 ;
 
-CREATE OR REPLACE FUNCTION edb_util.copy_remote_view(
+CREATE OR REPLACE FUNCTION edb_util.copy_remote_table_trigger(
   foreign_server_name text, source_schema text, target_schema text
   , verbose_bool boolean DEFAULT FALSE
   , snapshot_id text DEFAULT ''
