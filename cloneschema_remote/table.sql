@@ -89,6 +89,7 @@ CREATE OR REPLACE FUNCTION edb_util.copy_remote_table_simple(
 RETURNS boolean AS $$
 DECLARE rec record;
   connection_name text;
+  transaction_header text;
   rec_success boolean;
   all_success boolean DEFAULT TRUE;
 BEGIN
