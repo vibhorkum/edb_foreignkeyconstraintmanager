@@ -44,8 +44,9 @@ DECLARE rec record;
   all_success boolean DEFAULT TRUE;
 BEGIN
   -- append public for dblink PERFORM steps
-  PERFORM set_config(
-    'search_path', target_schema || ',public', FALSE);
+  PERFORM pg_catalog.set_config(
+    'search_path', format('%I,%I', target_schema, 'public'), FALSE
+  );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
 
@@ -63,9 +64,9 @@ BEGIN
     , rmot.name
     FROM dblink(connection_name
       , transaction_header || format(
-        'SELECT p.oid, p.proname from pg_catalog.pg_proc as p
-        WHERE p.pronamespace = %L::regnamespace
-          and p.protype in (''0''::"char",''2''::"char");'
+'SELECT p.oid, p.proname from pg_catalog.pg_proc as p
+WHERE p.pronamespace = %L::regnamespace
+  and p.protype in (''0''::"char",''2''::"char");'
         , source_schema)
     ) as rmot(oid oid, name text)
   LOOP
@@ -98,8 +99,9 @@ DECLARE rec record;
   all_success boolean DEFAULT TRUE;
 BEGIN
   -- append public for dblink PERFORM steps
-  PERFORM set_config(
-    'search_path', target_schema || ',public', FALSE);
+  PERFORM pg_catalog.set_config(
+    'search_path', format('%I,%I', target_schema, 'public'), FALSE
+  );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
 
@@ -117,9 +119,9 @@ BEGIN
     , rmot.name
     FROM dblink(connection_name
       , transaction_header || format(
-        'SELECT p.oid, p.proname from pg_catalog.pg_proc as p
-        WHERE p.pronamespace = %L::regnamespace
-          and p.protype = ''1''::"char";'
+'SELECT p.oid, p.proname from pg_catalog.pg_proc as p
+WHERE p.pronamespace = %L::regnamespace
+  and p.protype = ''1''::"char";'
         , source_schema)
     ) as rmot(oid oid, name text)
   LOOP

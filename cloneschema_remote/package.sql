@@ -44,8 +44,9 @@ DECLARE rec record;
   all_success boolean DEFAULT TRUE;
 BEGIN
   -- append public for dblink PERFORM steps
-  PERFORM set_config(
-    'search_path', target_schema || ',public', FALSE);
+  PERFORM pg_catalog.set_config(
+    'search_path', format('%I,%I', target_schema, 'public'), FALSE
+  );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
 
@@ -63,8 +64,8 @@ BEGIN
     , rmot.name
     FROM dblink(connection_name
       , transaction_header || format(
-        'SELECT n.oid, n.nspname from pg_catalog.pg_namespace as n
-        WHERE n.nspobjecttype = 0 AND n.nspparent = %L::regnamespace;'
+'SELECT n.oid, n.nspname from pg_catalog.pg_namespace as n
+WHERE n.nspobjecttype = 0 AND n.nspparent = %L::regnamespace;'
         , source_schema)
     ) as rmot(oid oid, name text)
   LOOP

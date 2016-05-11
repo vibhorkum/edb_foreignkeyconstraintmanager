@@ -55,23 +55,24 @@ BEGIN
 
   INSERT INTO ret_table
   SELECT * from dblink(connection_name
-    , transaction_header
-    || format('with RECURSIVE viewing AS (
-      SELECT c.oid as relid, c.relname, NULL::oid as refobjid, 0 as ancestors
-        from pg_catalog.pg_class as c WHERE c.relkind = ''v''::"char"
-         AND c.relnamespace = %L::regnamespace
-      UNION ALL
-      SELECT DISTINCT c.oid, c.relname, d.refobjid
-        , viewing.ancestors + 1
-        from pg_catalog.pg_depend as d
-        join viewing on d.refobjid = viewing.relid
-        join pg_catalog.pg_rewrite as rw on d.objid = rw.oid
-        join pg_catalog.pg_class as c
-          on rw.ev_class = c.oid and c.relkind = ''v''::"char"
-      WHERE c.oid <> d.refobjid
-    ) SELECT relid, relname, max(ancestors) as ancestors
-    FROM viewing GROUP BY relid, relname
-    ORDER BY ancestors;', source_schema)
+    , transaction_header || format(
+'with RECURSIVE viewing AS (
+  SELECT c.oid as relid, c.relname, NULL::oid as refobjid, 0 as ancestors
+    from pg_catalog.pg_class as c WHERE c.relkind = ''v''::"char"
+     AND c.relnamespace = %L::regnamespace
+  UNION ALL
+  SELECT DISTINCT c.oid, c.relname, d.refobjid
+    , viewing.ancestors + 1
+    from pg_catalog.pg_depend as d
+    join viewing on d.refobjid = viewing.relid
+    join pg_catalog.pg_rewrite as rw on d.objid = rw.oid
+    join pg_catalog.pg_class as c
+      on rw.ev_class = c.oid and c.relkind = ''v''::"char"
+  WHERE c.oid <> d.refobjid
+) SELECT relid, relname, max(ancestors) as ancestors
+FROM viewing GROUP BY relid, relname
+ORDER BY ancestors;'
+    , source_schema)
   ) as rmot(relid oid, relname text, ancestors integer)
   ;
 
@@ -89,18 +90,16 @@ CREATE OR REPLACE FUNCTION edb_util.copy_remote_view(
 )
 RETURNS boolean AS $$
 DECLARE rec record;
-  --connection_name text;
   rec_success boolean;
   all_success boolean DEFAULT TRUE;
 BEGIN
   -- append public for dblink PERFORM steps
-  PERFORM set_config(
-    'search_path', target_schema || ',public', FALSE);
-  --connection_name := md5(random()::text);
-  --PERFORM dblink_connect(connection_name, foreign_server_name);
+  PERFORM pg_catalog.set_config(
+    'search_path', format('%I,%I', target_schema, 'public'), FALSE
+  );
 
   FOR rec in
-    SELECT 'CREATE VIEW ' || quote_ident(relname) || ' AS '
+    SELECT format('CREATE VIEW %I AS ', relname)
       || replace(
         edb_util.get_remote_view_declaration(
           foreign_server_name, relid, snapshot_id
