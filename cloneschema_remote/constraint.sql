@@ -89,6 +89,8 @@ where c.relnamespace = %L::regnamespace
     END IF;
   END LOOP;
 
+  PERFORM dblink(connection_name, 'COMMIT;');
+  --PERFORM dblink_disconnect(connection_name)
   -- now create FK
   FOR rec in
     SELECT replace(
@@ -109,7 +111,7 @@ where c.relnamespace = %L::regnamespace
     ) as rmot(relname text, name text, constraintid oid)
   LOOP
     SELECT * from edb_util.object_create_runner(
-      rec.name, rec.decl, 'TABLE CONSTRAINT', FALSE, verbose_bool)
+      rec.name, rec.decl, 'TABLE FK CONSTRAINT', FALSE, verbose_bool)
         INTO rec_success;
 
     IF NOT rec_success THEN
