@@ -140,16 +140,27 @@ BEGIN
   --   RETURN FALSE;
   -- END IF;
 
-  -- SELECT edb_util.copy_remote_table_index(
+  -- SELECT edb_util.copy_remote_table_default(
   --   foreign_server_name
   --   , source_schema_name, target_schema_name
   --   , verbose_bool, snapshot_id
   -- ) INTO status_bool;
   -- IF NOT status_bool THEN
-  --   RAISE NOTICE 'Failed to copy INDEX from % to %. ROLLING BACK CHANGES'
+  --   RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
   --     , source_schema_name, target_schema_name;
   --   RETURN FALSE;
   -- END IF;
+
+  SELECT edb_util.copy_remote_table_index(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy INDEX from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
 
   SELECT edb_util.copy_remote_table_trigger(
     foreign_server_name
