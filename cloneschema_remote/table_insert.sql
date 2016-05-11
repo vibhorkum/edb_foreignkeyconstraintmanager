@@ -87,7 +87,7 @@ ORDER BY a.attnum;'
         , relid)
       ) as rmot(relname text, attname text, atttypdecl text)
     )
-    SELECT format('INSERT INTO %I' attrs.relname)
+    SELECT 'INSERT INTO ' || attrs.relname
       || ' SELECT ' || string_agg(attrs.attname, ', ')
       || format(' from %I;', foreign_table_name)
       from attrs
