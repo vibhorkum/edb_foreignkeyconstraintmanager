@@ -86,12 +86,37 @@ BEGIN
     foreign_server_name
     , source_schema_name, target_schema_name
     , on_tblspace, verbose_bool
+    , snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
     RAISE NOTICE 'Failed to copy TABLE from % to %. ROLLING BACK CHANGES'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
+
+  PERFORM edb_util.copy_remote_view(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  );
+
+  PERFORM edb_util.copy_remote_package(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  );
+
+  PERFORM edb_util.copy_remote_procedure(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  );
+
+  PERFORM edb_util.copy_remote_function(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  );
 
   SELECT edb_util.copy_remote_table_data(
     foreign_server_name
@@ -103,6 +128,50 @@ BEGIN
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
+
+  -- SELECT edb_util.copy_remote_table_constraint(
+  --   foreign_server_name
+  --   , source_schema_name, target_schema_name
+  --   , verbose_bool, snapshot_id
+  -- ) INTO status_bool;
+  -- IF NOT status_bool THEN
+  --   RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
+  --     , source_schema_name, target_schema_name;
+  --   RETURN FALSE;
+  -- END IF;
+
+  -- SELECT edb_util.copy_remote_table_index(
+  --   foreign_server_name
+  --   , source_schema_name, target_schema_name
+  --   , verbose_bool, snapshot_id
+  -- ) INTO status_bool;
+  -- IF NOT status_bool THEN
+  --   RAISE NOTICE 'Failed to copy INDEX from % to %. ROLLING BACK CHANGES'
+  --     , source_schema_name, target_schema_name;
+  --   RETURN FALSE;
+  -- END IF;
+
+  SELECT edb_util.copy_remote_table_trigger(
+    foreign_server_name
+    , source_schema_name, target_schema_name
+    , verbose_bool, snapshot_id
+  ) INTO status_bool;
+  IF NOT status_bool THEN
+    RAISE NOTICE 'Failed to copy TRIGGER from % to %. ROLLING BACK CHANGES'
+      , source_schema_name, target_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  -- SELECT edb_util.copy_remote_table_rule(
+  --   foreign_server_name
+  --   , source_schema_name, target_schema_name
+  --   , verbose_bool, snapshot_id
+  -- ) INTO status_bool;
+  -- IF NOT status_bool THEN
+  --   RAISE NOTICE 'Failed to copy TRIGGER from % to %. ROLLING BACK CHANGES'
+  --     , source_schema_name, target_schema_name;
+  --   RETURN FALSE;
+  -- END IF;
 
   PERFORM dblink(connection_name, 'COMMIT;');
   PERFORM dblink_disconnect(connection_name);
