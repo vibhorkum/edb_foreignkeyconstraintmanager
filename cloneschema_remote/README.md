@@ -1,4 +1,5 @@
-# Remote Schema Clone API
+# EnterpriseDB Clone Schema
+## Remote Schema Clone
 
 This package provides functionality to deep copy a complete schema, including: tables, table data, indexes, functions, packages, procedures, sequences, data types, and all other objects from a schema on a specified remote server to a target schema on the local server.
 
@@ -15,6 +16,8 @@ CREATE EXTENSION IF NOT EXISTS dblink;
 
 The remotecopyschema function expects a foreign server to be defined, with a user bound to the server.
 
+In this example we create a foreign server, with a hypothetical db named targetdb and a local role (`target`) that is bound to a remote role (`ima_user`) on the remote server. The remote role must have read access to the source schema and system catalogs.
+
 ```
 CREATE SERVER a_foreign_server FOREIGN DATA WRAPPER postgres_fdw
   OPTIONS (hostaddr '10.0.0.1', dbname 'targetdb')
@@ -22,7 +25,7 @@ CREATE SERVER a_foreign_server FOREIGN DATA WRAPPER postgres_fdw
 CREATE ROLE target LOGIN PASSWORD 'target-pass'
 ;
 CREATE USER MAPPING FOR target SERVER a_foreign_server
-  OPTIONS (user 'i_am_a_user', password 'some-password')
+  OPTIONS (user 'ima_user', password 'some-password')
 ;
 GRANT USAGE ON FOREIGN SERVER a_foreign_server TO target
 ;
@@ -41,9 +44,6 @@ CREATE OR REPLACE FUNCTION edb_util.remotecopyschema(
 RETURNS boolean
 ```
 
-And can be run `SELECT edb_util.remotecopyschema('a_foreign_server', 'source','target');`
+ `SELECT edb_util.remotecopyschema('a_foreign_server', 'source','target');`
 
-The optional boolean parameters are: verbose_bool which displays the full object declarations to the screen, and on_tblspace which creates objects in the same tablespaces they appear on at the remote server. If on_tblspace is TRUE, and the local server does not have matching tablespace names created, the function will exit without performing any action, and return FALSE.
-
-It is strongly recommended to set the following option at the psql prompt to prevent CONTEXT messages from overwhelming the user.
-`\set VERBOSITY terse`
+There are two optional switches: `verbose_bool` tells the function to display DDL as well as function names when TRUE; `on_tblspace` tells the function to attempt creating objects on named tablespaces if these are used in the source schema. The function will exit without performing any action and return FALSE if any named tablespaces are not present on the local server. When set FALSE, all creates happen on the local default tablespace.
