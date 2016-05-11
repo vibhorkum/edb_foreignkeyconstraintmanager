@@ -62,6 +62,7 @@ BEGIN
   );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
+
   transaction_header := 'BEGIN ISOLATION LEVEL REPEATABLE READ; '
     || CASE when snapshot_id > ''
       then format('SET TRANSACTION SNAPSHOT %L; ', snapshot_id) else '' END

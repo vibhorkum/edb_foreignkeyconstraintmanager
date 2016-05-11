@@ -25,17 +25,18 @@ BEGIN
       || CASE WHEN rmot.cycle_option is FALSE
         then ' NO CYCLE' else ' CYCLE' END
       || ';'
-      from dblink(connection_name
-      , format(transaction_header
-        || 'SELECT quote_ident(c.relname) as name
-        , parm.increment::text as increment
-        , parm.minimum_value::text as minimum_value
-        , parm.maximum_value::text as maximum_value
-        , pg_catalog.nextval(c.oid)::text as next_value
-        , parm.cycle_option
-        from pg_catalog.pg_class as c
-      JOIN LATERAL pg_catalog.pg_sequence_parameters(c.oid) as parm on 1=1
-      WHERE c.oid = %L;', relid)
+    FROM dblink(connection_name
+      , transaction_header || format(
+'SELECT quote_ident(c.relname) as name
+  , parm.increment::text as increment
+  , parm.minimum_value::text as minimum_value
+  , parm.maximum_value::text as maximum_value
+  , pg_catalog.nextval(c.oid)::text as next_value
+  , parm.cycle_option
+FROM pg_catalog.pg_class as c
+JOIN LATERAL pg_catalog.pg_sequence_parameters(c.oid) as parm on 1=1
+WHERE c.oid = %L;'
+      , relid)
     ) as rmot(name text, increment text
       , minimum_value text, maximum_value text, next_value text
       , cycle_option boolean
@@ -67,6 +68,7 @@ BEGIN
   );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
+
   transaction_header := 'BEGIN ISOLATION LEVEL REPEATABLE READ; '
     || CASE when snapshot_id > ''
       then format('SET TRANSACTION SNAPSHOT %L; ', snapshot_id) else '' END

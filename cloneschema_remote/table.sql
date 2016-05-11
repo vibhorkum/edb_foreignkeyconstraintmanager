@@ -10,33 +10,33 @@ DECLARE return_decl text;
   transaction_header text;
 BEGIN
   connection_name := md5(random()::text);
+  PERFORM dblink_connect(connection_name, foreign_server_name);
 
   transaction_header := 'BEGIN ISOLATION LEVEL REPEATABLE READ; '
     || CASE when snapshot_id > ''
       then format('SET TRANSACTION SNAPSHOT %L; ', snapshot_id) else '' END
     ;
 
-  PERFORM dblink_connect(connection_name, foreign_server_name);
   return_decl := (
     with attrs as (
       SELECT * from dblink(connection_name
-        , format(transaction_header
-          || 'SELECT quote_ident(c.relname) as relname
-              , quote_ident(a.attname) as attname
-              , a.attnotnull
-              , format_type(a.atttypid, a.atttypmod) as atttypdecl
-              , (SELECT cl.collname
-                FROM pg_catalog.pg_collation as cl
-                WHERE a.attcollation > 0
-                  AND cl.oid = a.attcollation
-                  AND cl.collname <> ''default''
-              ) as attcollation
-            from pg_catalog.pg_class as c
-          LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
-          WHERE c.oid = %L
-            and a.attnum > 0
-            and NOT a.attisdropped
-          ORDER BY a.attnum;'
+        , transaction_header || format(
+'SELECT quote_ident(c.relname) as relname
+    , quote_ident(a.attname) as attname
+    , a.attnotnull
+    , format_type(a.atttypid, a.atttypmod) as atttypdecl
+    , (SELECT cl.collname
+      FROM pg_catalog.pg_collation as cl
+      WHERE a.attcollation > 0
+        AND cl.oid = a.attcollation
+        AND cl.collname <> ''default''
+    ) as attcollation
+  from pg_catalog.pg_class as c
+LEFT join pg_catalog.pg_attribute as a on c.oid = a.attrelid
+WHERE c.oid = %L
+  and a.attnum > 0
+  and NOT a.attisdropped
+ORDER BY a.attnum;'
         , relid)
     ) as rmot(relname text, attname text
         , attnotnull boolean, atttypdecl text, attcollation text)
@@ -47,15 +47,14 @@ BEGIN
         WHEN 'u' THEN 'UNLOGGED ' else '' END as persistence
       , CASE when on_tblspace and rmot.spcname is NOT NULL
           then ' TABLESPACE ' || rmot.spcname else '' END as tblspace
-      from dblink(connection_name
-      , format('BEGIN ISOLATION LEVEL REPEATABLE READ;
-          SELECT quote_ident(c.relname) as relname
-            , c.relpersistence
-            , t.spcname
-          FROM pg_catalog.pg_class as c
-          LEFT join pg_catalog.pg_tablespace as t
-            on c.reltablespace = t.oid
-          WHERE c.oid = %L;'
+      from dblink(connection_name, format(
+'BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT quote_ident(c.relname) as relname
+  , c.relpersistence
+  , t.spcname
+FROM pg_catalog.pg_class as c
+LEFT join pg_catalog.pg_tablespace as t on c.reltablespace = t.oid
+WHERE c.oid = %L;'
       , relid)
     ) as rmot(relname text, relpersistence text, spcname text)
   )
@@ -66,8 +65,6 @@ BEGIN
         a.attname || ' ' || a.atttypdecl
       || CASE when a.attcollation is NULL then ''
           else ' COLLATE ' || a.attcollation END
-      -- || CASE when a.attdef is NULL then ''
-      --     else ' DEFAULT (' || a.attdef || ')' END
       || CASE when a.attnotnull then ' NOT NULL' else '' END
       , ', ')
     || ')' || r.tblspace || ';'
@@ -101,6 +98,7 @@ BEGIN
   );
   connection_name := md5(random()::text);
   PERFORM dblink_connect(connection_name, foreign_server_name);
+
   transaction_header := 'BEGIN ISOLATION LEVEL REPEATABLE READ; '
     || CASE when snapshot_id > ''
       then format('SET TRANSACTION SNAPSHOT %L; ', snapshot_id) else '' END
