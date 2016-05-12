@@ -3,6 +3,8 @@
 
 This package provides functionality to deep copy a complete schema, including: tables, table data, indexes, functions, packages, procedures, sequences, data types, and all other objects from a schema on a specified remote server to a target schema on the local server.
 
+Because the function raises nested NOTICE messages that provide additional CONTEXT messages to the screen, I strongly recommend setting the following option when running this from a psql prompt: `\set VERBOSITY terse`
+
 ### Prerequisites
 
 The following two extensions must already be installed on the local server:
@@ -32,7 +34,6 @@ GRANT USAGE ON FOREIGN SERVER a_foreign_server TO target
 ```
 
 ### Usage
-
 The function has the following definition:
 ```
 CREATE OR REPLACE FUNCTION edb_util.remotecopyschema(
@@ -45,7 +46,5 @@ RETURNS boolean
 ```
 
  `SELECT edb_util.remotecopyschema('a_foreign_server', 'source','target');`
-
-Because the function raises nested NOTICE messages that provide additional CONTEXT messages to the screen, I strongly recommend setting the following option when running this from a psql prompt: `\set VERBOSITY terse`
 
 There are two optional switches: `verbose_bool` tells the function to display DDL as well as function names when TRUE; `on_tblspace` tells the function to attempt creating objects on named tablespaces if these are used in the source schema. The function will exit without performing any action and return FALSE if any named tablespaces are not present on the local server. When set FALSE, all creates happen on the local default tablespace.
