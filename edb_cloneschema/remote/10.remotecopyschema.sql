@@ -55,7 +55,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy ENUM from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy ENUM from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -66,7 +66,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy DATA TYPE from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy DATA TYPE from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -77,7 +77,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy SEQUENCE from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy SEQUENCE from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -89,7 +89,7 @@ BEGIN
     , snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TABLE from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TABLE from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -124,7 +124,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TABLE DATA from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TABLE DATA from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -135,7 +135,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -146,7 +146,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TABLE CONSTRAINT from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -157,7 +157,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy INDEX from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy INDEX from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -168,7 +168,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TRIGGER from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TRIGGER from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;
@@ -179,7 +179,7 @@ BEGIN
     , verbose_bool, snapshot_id
   ) INTO status_bool;
   IF NOT status_bool THEN
-    RAISE NOTICE 'Failed to copy TRIGGER from % to %. ROLLING BACK CHANGES'
+    RAISE NOTICE 'Failed to copy TRIGGER from % to %.'
       , source_schema_name, target_schema_name;
     RETURN FALSE;
   END IF;

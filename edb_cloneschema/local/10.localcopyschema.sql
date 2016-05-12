@@ -1,48 +1,3 @@
-CREATE OR REPLACE FUNCTION edb_util.localcopyschema(
-  source_schema_name text, target_schema_name text []
-  , verbose_bool boolean DEFAULT FALSE
-  , on_tblspace boolean DEFAULT FALSE
-)
-RETURNS boolean
-AS $$
-DECLARE snapshot_id integer;
-  status_bool boolean;
-  target text;
-BEGIN
-  IF NOT EXISTS ( SELECT 1 from pg_catalog.pg_namespace
-    where nspname = source_schema_name and nspparent = 0
-  ) THEN
-    RAISE NOTICE 'Specified source catalog % does not exist.', source_schema_name;
-    RETURN FALSE;
-  END IF;
-
-  -- check if source schema contains FK that references other schema.
-  -- alter to only use source schema once, and learn from copy attempts.
-  -- change to commit after first schema copied
-
-  FOREACH target in ARRAY target_schema_name
-  LOOP
-    RAISE NOTICE 'COPYING SCHEMA % to %', source_schema_name, target;
-    SELECT edb_util.copy_schema(source_schema_name, target, on_tblspace)
-      INTO status_bool;
-    IF NOT status_bool THEN
-      RAISE NOTICE 'Failed to copy SCHEMA % to %', source_schema_name, target;
-    END IF;
-  END LOOP;
-
-  RETURN TRUE;
-
-EXCEPTION WHEN others THEN
-  RAISE NOTICE 'Encoutered exception in copy_schema.';
-  RAISE NOTICE 'ROLLING BACK CHANGES';
-  RAISE NOTICE '% %', sqlstate, sqlerrm;
-
-  RETURN FALSE;
-
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT
-;
-
 -- could create verbosity enum verbose, terse, silent
 CREATE OR REPLACE FUNCTION edb_util.copy_schema(
   source_schema_name text, target_schema_name text
@@ -204,6 +159,44 @@ BEGIN
   END IF;
 
   RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT
+;
+
+CREATE OR REPLACE FUNCTION edb_util.localcopyschema(
+  source_schema_name text, target_schema_name text []
+  , verbose_bool boolean DEFAULT FALSE
+  , on_tblspace boolean DEFAULT FALSE
+)
+RETURNS boolean
+AS $$
+DECLARE snapshot_id integer;
+  status_bool boolean;
+  target text;
+BEGIN
+  IF NOT EXISTS ( SELECT 1 from pg_catalog.pg_namespace
+    where nspname = source_schema_name and nspparent = 0
+  ) THEN
+    RAISE NOTICE 'Specified source catalog % does not exist.', source_schema_name;
+    RETURN FALSE;
+  END IF;
+
+  -- check if source schema contains FK that references other schema.
+  -- alter to only use source schema once, and learn from copy attempts.
+  -- change to commit after first schema copied
+
+  FOREACH target in ARRAY target_schema_name
+  LOOP
+    RAISE NOTICE 'COPYING SCHEMA % to %', source_schema_name, target;
+    SELECT edb_util.copy_schema(source_schema_name, target, on_tblspace)
+      INTO status_bool;
+    IF NOT status_bool THEN
+      RAISE NOTICE 'Failed to copy SCHEMA % to %', source_schema_name, target;
+    END IF;
+  END LOOP;
+
+  RETURN TRUE;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT
 ;
