@@ -1,9 +1,13 @@
 # EnterpriseDB Clone Schema Extension
 
 ## Installation
-A typical PostgreSQL extension is comprised of two files, an SQL file of new functionality, and a control file containing extension meta data. This repository includes a script that will concatenate the SQL instruction file, and create a tar file containing the sql script, control file, & makefile.
+A typical PostgreSQL extension is comprised of two files, an SQL file of new functionality, and a control file containing extension meta data. This repository contains a script that will build the sql file and package this with a control and makefile.
 
-The makefile shoud be run on the EDB Postgres host as root, but should also have `pg_config` available in the path. E.g.
+```
+$ sh assemble_edb_cloneschema.sh
+```
+
+The makefile should be run on the EDB Postgres host as root, and should also be sure to have `pg_config` available in the path. E.g.
 
 ```
 $ tar xzf edb_cloneschema.tar.gz
