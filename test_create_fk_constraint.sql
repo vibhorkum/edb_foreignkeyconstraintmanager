@@ -2,6 +2,8 @@
 
 DROP TABLE IF EXISTS sales;
 
+DROP TABLE IF EXISTS sales_np;
+
 CREATE TABLE sales
 (
   order_no    number PRIMARY KEY,
@@ -43,6 +45,17 @@ PARTITION BY RANGE(date)
         SUBPARTITION q4_americas VALUES ('US', 'CANADA')
        )
 );
+
+CREATE TABLE sales_np
+(
+  order_no    number PRIMARY KEY,
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+);
+
 -- create function
 
 \i partition_fk_management.sql
@@ -62,3 +75,11 @@ select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales_q2_2012', 
 \d+ sales
 \d+ sales_q1_americas
 
+\qecho "################# create constrain on non partitioned parent and partitioned  #########"
+\qecho "#######################################################################################"
+
+
+select create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', true);
+
+\d+ sales_np
+\d+ sales
