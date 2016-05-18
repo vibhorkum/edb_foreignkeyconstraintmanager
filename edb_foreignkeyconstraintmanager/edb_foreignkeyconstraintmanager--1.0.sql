@@ -17,7 +17,7 @@ DECLARE
 BEGIN
 
 --  If Parent is non-partition and child is partitioned, then use ALTER TABLE add constraint.
-IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(parent_table_name::TEXT)) THEN
+IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = quote_ident_redwood(parent_table_name::TEXT)) THEN
 
   -- alter table ALTER TABLE PARENT ADD  FOREIGN KEY(T) REFERENCES CHILD(T);
   EXECUTE 'ALTER TABLE '|| parent_table_name || ' ADD  FOREIGN KEY(' || array_to_string(parent_table_column_names, ',') || ') 
@@ -46,9 +46,9 @@ END IF;
 --child table
 
 -- if child is partitioned, check all part tables
-IF EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(child_table_name::TEXT)) THEN
+IF EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = quote_ident_redwood(child_table_name::TEXT)) THEN
   -- check all partitions
-  FOR tbl_name in select partition_name from ALL_TAB_PARTITIONS where table_name = upper(child_table_name::TEXT) LOOP
+  FOR tbl_name in select partition_name from ALL_TAB_PARTITIONS where table_name = quote_ident_redwood(child_table_name::TEXT) LOOP
   tbl_name = lower(tbl_name);
 
     -- if the trigger does not exists, create it
@@ -80,7 +80,7 @@ IF NOT EXISTS (select 1 from pg_trigger where not tgisinternal and tgrelid = chi
 
 ELSE
   -- if it is not a partition table, throw error 
-  IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = upper(child_table_name::TEXT)) THEN
+  IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = quote_ident_redwood(child_table_name::TEXT)) THEN
     RAISE unique_violation USING MESSAGE = 'a trigger named fk_constraint_' || child_table_name || ' already exists';
   END IF;
 
