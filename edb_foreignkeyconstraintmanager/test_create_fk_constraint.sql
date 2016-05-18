@@ -57,20 +57,20 @@ CREATE TABLE sales_np
 );
 
 -- create function
-
-\i partition_fk_management.sql
+create extension refint;
+create extension edb_foreignkeyconstraintmanager;
 
 \qecho "################ creating constraint on partitioned child ######################"
 \qecho "################################################################################"
 
-select create_fk_constraint('sales', '{order_no}', 'sales_q1_2012', '{order_no}', true);
+select edb_util.create_fk_constraint('sales', '{order_no}', 'sales_q1_2012', '{order_no}', true);
 \d+ sales
 \d+ sales_q1_2012
 
 \qecho "################# create constrain on non partitioned parent ###################"
 \qecho "################################################################################"
 
-select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales_q2_2012', '{order_no}', true);
+select edb_util.create_fk_constraint('sales_q1_americas', '{order_no}', 'sales_q2_2012', '{order_no}', true);
 
 \d+ sales
 \d+ sales_q1_americas
@@ -79,7 +79,7 @@ select create_fk_constraint('sales_q1_americas', '{order_no}', 'sales_q2_2012', 
 \qecho "#######################################################################################"
 
 
-select create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', true);
+select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', true);
 
 \d+ sales_np
 \d+ sales

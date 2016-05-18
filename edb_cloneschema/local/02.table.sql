@@ -35,7 +35,7 @@ BEGIN
       , source_schema || '.', target_schema || '.'
     )  as decl
       , c.relname as name
-      from pg_class as c
+      from pg_catalog.pg_class as c
      WHERE c.relkind = 'S'::"char"
        and c.relnamespace = source_schema::regnamespace
   LOOP
@@ -571,7 +571,9 @@ BEGIN
     ) as decl
       , tg.tgname as name
       from pg_catalog.pg_trigger as tg
-     WHERE EXISTS ( SELECT 1 from pg_catalog.pg_class
+     WHERE (NOT tg.tgisinternal
+        OR (tg.tgisinternal AND tg.tgenabled = 'D'))
+       and EXISTS ( SELECT 1 from pg_catalog.pg_class
        WHERE oid = tg.tgrelid
          and relnamespace = source_schema::regnamespace
        )

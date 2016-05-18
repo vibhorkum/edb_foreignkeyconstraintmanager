@@ -1,0 +1,9 @@
+# EnterpriseDB edb_foreignkeyconstraintmanager extension
+# Copyright (c) 2016. EnterpriseDB Corporation and/or its subsidiaries or affiliates. All Rights Reserved.
+comment = 'EnterpriseDB edb_foreignkeyconstraintmanager extension provides foreign key managment for partitioned tables'
+default_version = '1.0'
+module_pathname = '$libdir/edb_foreignkeyconstraintmanager'
+requires = 'REFINT'
+superuser = false
+relocatable = false
+schema = 'edb_util'

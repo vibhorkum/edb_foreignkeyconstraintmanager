@@ -1,7 +1,13 @@
--- this requires the refint extension
-CREATE EXTENSION IF NOT EXISTS REFINT;
+/* EnterpriseDB edb_foreignkeyconstraintmanager extension
+ *
+ * "Copyright © 2016. EnterpriseDB Corporation and/or its subsidiaries or
+ * affiliates. All Rights Reserved."
+ */
 
-CREATE OR REPLACE FUNCTION public.create_fk_constraint(parent_table_name regclass, parent_table_column_names text[], child_table_name regclass, child_table_column_names text[], cascade boolean)
+-- complain if script is sourced in psql, rather than via CREATE EXTENSION
+\echo Use "CREATE EXTENSION edb_foreignkeyconstraintmanager" to load this file. \quit
+
+CREATE OR REPLACE FUNCTION edb_util.create_fk_constraint(parent_table_name regclass, parent_table_column_names text[], child_table_name regclass, child_table_column_names text[], cascade boolean)
  RETURNS boolean
  LANGUAGE plpgsql
 AS $function$

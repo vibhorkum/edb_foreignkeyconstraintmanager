@@ -1,0 +1,13 @@
+edb_foreignkeyconstraintmanager
+Copyright © 2016. EnterpriseDB Corporation and/or its subsidiaries or
+affiliates. All rights reserved.
+
+Extension files should be copied to the EDB Postgres shared directory.
+This can be simply accomplished by running `make install` as root,
+however the makefile does expect pg_config to be available in the
+path. e.g.
+
+$ sudo PATH=$PATH:/usr/ppas-9.5/bin make install
+
+Once this is complete, the extension is available with `CREATE
+EXTENSION edb_foreignkeyconstraintmanager;` from psql.

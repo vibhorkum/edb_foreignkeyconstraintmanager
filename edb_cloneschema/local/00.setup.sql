@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS edb_util AUTHORIZATION enterprisedb;
+CREATE SCHEMA IF NOT EXISTS edb_util;
 
 CREATE OR REPLACE TYPE edb_util.declaration_type AS (name text, decl text);
 
