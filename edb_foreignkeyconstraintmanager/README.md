@@ -10,7 +10,7 @@ $ cd edb_foreignkeyconstraintmanager
 $ sudo PATH=$PATH:/usr/ppas-9.5/bin make install
 ```
 
-Now the extension can be created with a standard `CREATE EXTENSION foreignkeyconstraintmanager;`, and dropped with `DROP EXTENSION foreignkeyconstraintmanager;`.
+Now the extension can be created with a standard `CREATE EXTENSION edb_foreignkeyconstraintmanager;`, and dropped with `DROP EXTENSION edb_foreignkeyconstraintmanager;`.
 
 ## Usage
 This extension provides a single function.  Installation creates this object in the schema `edb_util`, which itself is created if it does not exist.
