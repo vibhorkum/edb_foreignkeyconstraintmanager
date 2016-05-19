@@ -23,3 +23,5 @@ select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_
 \qecho "################################################################################"
 
 \d+ sales_east_asia
+\d+ sales_americas
+
