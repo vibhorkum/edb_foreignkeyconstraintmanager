@@ -5,7 +5,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
---\echo Use "CREATE EXTENSION edb_foreignkeyconstraintmanager" to load this file. \quit
+\echo Use "CREATE EXTENSION edb_foreignkeyconstraintmanager" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION edb_util.create_fk_constraint(parent_table_name regclass, parent_table_column_names text[], child_table_name regclass, child_table_column_names text[], cascade boolean)
  RETURNS boolean
@@ -29,9 +29,13 @@ IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = 
 
     FOR tbl_name in select partition_name from ALL_TAB_PARTITIONS where table_name = quote_ident_redwood(child_table_name::TEXT) LOOP
     tbl_name = lower(tbl_name);
+      -- if constraint exists, raise notice
+      IF NOT EXISTS ( select 1 from information_schema.constraint_column_usage where constraint_name = child_table_name || '_' || tbl_name || '_' || array_to_string(child_table_column_names, ',') || '_fkey') THEN
+        RAISE NOTICE 'no fkey named %.  creating', child_table_name || '_' || tbl_name || '_' || array_to_string(child_table_column_names, ',') || '_fkey';
 
-      EXECUTE 'ALTER TABLE '|| child_table_name || '_' || tbl_name || ' ADD  FOREIGN KEY(' || array_to_string(child_table_column_names, ',') || ') 
-      REFERENCES '|| parent_table_name || '('|| array_to_string(parent_table_column_names, ',') || ')';
+        EXECUTE 'ALTER TABLE '|| child_table_name || '_' || tbl_name || ' ADD  FOREIGN KEY(' || array_to_string(child_table_column_names, ',') || ') 
+        REFERENCES '|| parent_table_name || '('|| array_to_string(parent_table_column_names, ',') || ')';
+      END IF;
     END LOOP;
   
   -- parent is not partition and child is not partitioned
