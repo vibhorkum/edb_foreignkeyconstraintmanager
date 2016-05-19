@@ -15,6 +15,11 @@ AS $function$
 DECLARE
 	tbl_name TEXT;
 BEGIN
+-- test for PPAS table part view
+IF NOT EXISTS ( select 1 from information_schema.views where table_name = 'all_part_tables') THEN
+  RAISE EXCEPTION 'PPAS specific view not found'
+      USING HINT = 'PPAS in oracle compatiblity mode is required for this extension';
+END IF;  
 
 --  If Parent is non-partition and child is partitioned, then use ALTER TABLE add constraint.
 IF NOT EXISTS (select 1 from ALL_PART_TABLES where ALL_PART_TABLES.table_name = quote_ident_redwood(parent_table_name::TEXT)) THEN
