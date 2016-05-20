@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS sales_np;
 DROP TABLE IF EXISTS sales2;
 DROP TABLE IF EXISTS sales2_np;
+DROP TABLE IF EXISTS "SalesNP";
 
 
 CREATE TABLE sales
@@ -63,3 +64,12 @@ CREATE TABLE sales2_np
   amount      number
 );
 
+CREATE TABLE "SalesNP"
+(
+  order_no    number PRIMARY KEY,
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+);
