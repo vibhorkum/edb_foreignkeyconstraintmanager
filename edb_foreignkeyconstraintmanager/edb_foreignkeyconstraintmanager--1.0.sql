@@ -49,10 +49,10 @@ ELSE
   -- add trigger for each partitioned table of parent  
   FOR tbl_name in select partition_name from ALL_TAB_PARTITIONS where table_name = quote_ident_redwood(parent_table_name::TEXT) LOOP
     tbl_name = lower(tbl_name);
-    IF NOT EXISTS (select 1 from pg_trigger where not tgisinternal and tgrelid = (parent_table_name || '_' || tbl_name)::regclass and tgname = 'fk_constraint_' || parent_table_name || '_' || tbl_name) THEN
-      RAISE NOTICE 'no trigger on % named %.  creating', parent_table_name || '_' || tbl_name, 'fk_constraint_' || parent_table_name || '_' || tbl_name;
- 
-       EXECUTE 'CREATE TRIGGER fk_constraint_' || parent_table_name || '_' || tbl_name || ' BEFORE DELETE OR UPDATE ON ' || parent_table_name || '_' || tbl_name || ' FOR EACH ROW
+    IF NOT EXISTS (select 1 from pg_trigger where not tgisinternal and tgrelid = (parent_table_name || '_' || tbl_name)::regclass and tgname = 'fk_constraint_' || child_table_name || '_' || array_to_string(child_table_column_names, ',')) THEN
+      RAISE NOTICE 'no trigger on % named %.  creating', parent_table_name || '_' || tbl_name, 'fk_constraint_' || child_table_name || '_' || array_to_string(child_table_column_names, ',');
+      
+       EXECUTE 'CREATE TRIGGER fk_constraint_' || child_table_name || '_' || array_to_string(child_table_column_names, ',') || ' BEFORE DELETE OR UPDATE ON ' || parent_table_name || '_' || tbl_name || ' FOR EACH ROW
        EXECUTE PROCEDURE
        check_foreign_key (
        1,  			-- number of tables that foreign keys need to be checked
