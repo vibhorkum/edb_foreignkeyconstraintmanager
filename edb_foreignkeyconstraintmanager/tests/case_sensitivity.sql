@@ -7,7 +7,6 @@
 \qecho "select edb_util.create_fk_constraint('sales', '{order_no}', '"SalesNP"', '{order_no}', true);"
 select edb_util.create_fk_constraint('sales', '{order_no}', '"SalesNP"', '{order_no}', true);
 
-\i inialize_test.sql
 
 \qecho "select edb_util.create_fk_constraint('"SalesNP"', '{order_no}', 'sales', '{order_no}', true);"
 select edb_util.create_fk_constraint('"SalesNP"', '{order_no}', 'sales', '{order_no}', true);
