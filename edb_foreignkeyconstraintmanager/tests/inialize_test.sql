@@ -4,11 +4,11 @@ create extension edb_foreignkeyconstraintmanager;
 
 -- create tables
 
-DROP TABLE IF EXISTS sales;
-DROP TABLE IF EXISTS sales_np;
-DROP TABLE IF EXISTS sales2;
-DROP TABLE IF EXISTS sales2_np;
-DROP TABLE IF EXISTS "SalesNP";
+DROP TABLE IF EXISTS sales CASCADE;
+DROP TABLE IF EXISTS sales_np CASCADE;
+DROP TABLE IF EXISTS sales2 CASCADE;
+DROP TABLE IF EXISTS sales2_np CASCADE;
+DROP TABLE IF EXISTS "SalesNP" CASCADE;
 
 
 CREATE TABLE sales

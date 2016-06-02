@@ -3,7 +3,7 @@
 \qecho "################ non partitioned parent, partitioned child #####################"
 \qecho "################################################################################"
 
-select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', true);
+select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', 'cascade');
 \d+ sales
 \d+ sales_europe
 \d+ sales_asia
@@ -18,7 +18,7 @@ ALTER TABLE sales ADD PARTITION east_asia VALUES ('CHINA', 'KOREA');
 \qecho "################################################################################"
 \d+ sales_east_asia
 
-select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', true);
+select edb_util.create_fk_constraint('sales_np', '{order_no}', 'sales', '{order_no}', 'cascade');
 \qecho "################ new partition before running create_fk_constraint #############"
 \qecho "################################################################################"
 
