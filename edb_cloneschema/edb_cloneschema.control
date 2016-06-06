@@ -1,9 +1,0 @@
-# EnterpriseDB clone schema extension
-# Copyright (c) 2016. EnterpriseDB Corporation and/or its subsidiaries or affiliates. All Rights Reserved.
-comment = 'EnterpriseDB clone schema extension provides local and remote deep copy of a specified local or remote schema.'
-default_version = '1.0'
-module_pathname = '$libdir/edb_cloneschema'
-requires = 'postgres_fdw, dblink'
-superuser = false
-relocatable = false
-schema = 'edb_util'
