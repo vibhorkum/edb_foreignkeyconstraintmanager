@@ -1,12 +1,40 @@
 # EnterpriseDB Foreignkey Constraintmanager Extension
-## Synopsis
-The function implements the four use cases described in the requirements documentation. This will be completely transparent as far as insert/update/delete operations. This will be implemented as a trigger-based solution that creates an access exclusive lock on update and delete when the parent is a partitioned table.
 
-If cascade = 'cascade' — then on delete, delete the referencing row, 
+EDB Foreign Key Constraint Manager is an extension, which allows user to create foreign key relationship between tables for following use cases:
 
-If cascade = 'restrict' — then on delete abort transaction if referencing keys exist, 
+1. Parent table is partitioned and child table is non-partitioned
+2. Parent and child tables both are partitioned
+3. Parent table is non-partitioned and child table is partitioned
+4. Parent and child tables are non partitioned.
 
-if cascade = 'setnull' —  then on delete set referencing key fields to null
+For use cases, where parent table is partitioned, this module uses the trigger based approach. i.e it creates the trigger using refint module which comes with EDB Postgres.
+If parent and child both are non-partitioned, then this module uses the standard ALTER TABLE command to add foreign key constraint between parent and child.
+
+From naming convention perspective it uses following nomenclature to create constraint/triggers for implementation:
+**EDB_partition_oid1_oid2_columnlist**
+
+1. oid1 : oid1 is oid of table on which trigger will be created
+2. oid2: oid2 is oid of table which will be part of FK constraint.
+3. columnlist: all columns names of table on which trigger will be created.
+
+## About Refint
+Refint is a module comes with PostgreSQL and also available in EDB Postgres. This module has functions for Implementing Referential Integrity. For more detail, please refer to following link:
+
+https://www.postgresql.org/docs/9.5/static/contrib-spi.html
+
+## SQL APIs of EDB Foreign Key Constraint Manager
+
+EDB Foreign Key Constraint Manager comes with a SQL function **edb_util.create_fk_constraint()**. This function implements the foreign key relationship between tables, which is completely transparent to insert/update/delete operations and doesn't keep heavy lock while implementing the Foreign key on table.
+Function takes following arguments:
+
+1. parent REGCLASS: Name of the parent table
+2. parent_column_names TEXT[]: list of columns of parent table in array format
+2. child REGCLASS: Name of the child table
+3.  child_column_names TEXT[]: column list of child table in array format
+4.  cascade TEXT: action for update/delete operation. cascade takes following arguments:
+  1. If cascade = 'cascade' — then on delete, delete the referencing row
+  2. If cascade = 'restrict' — then on delete abort transaction if referencing keys exist, 
+  3. If cascade = 'setnull' —  then on delete set referencing key fields to null
 
 ### Prerequisites
 For installation to proceed, the following extension must be installed on the  server:
