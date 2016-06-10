@@ -90,3 +90,215 @@ Test cases are stored in the test subdirectory.  They can be run using psql
 $ psql database -f test4.sql 
 ```
 The inialize_test.sql file will create the extension and build some sample tables used in the tests
+
+## Example
+---------
+```sql
+test=# CREATE EXTENSION IF NOT EXISTS refint;
+CREATE EXTENSION
+test=# DROP EXTENSION edb_foreignkeyconstraintmanager;
+ERROR:  extension "edb_foreignkeyconstraintmanager" does not exist
+test=# CREATE EXTENSION edb_foreignkeyconstraintmanager;
+CREATE EXTENSION
+test=# -- (1) Non partitioned table referencing non partitioned table
+test=# create table teachers(tid int primary key, tname varchar(255));
+CREATE TABLE
+test=# create table students(sid int primary key, sname varchar(255), tid int);
+CREATE TABLE
+test=# 
+test=# SELECT  edb_util.create_fk_constraint('teachers',ARRAY['tid'],'students',ARRAY['tid'],'cascade');
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# insert into teachers values(1, 't1');
+INSERT 0 1
+test=# insert into teachers values(2, 't2');
+INSERT 0 1
+test=# insert into teachers values(3, 't3');
+INSERT 0 1
+test=# 
+test=# insert into students values(1, 's1', 1);
+INSERT 0 1
+test=# insert into students values(2, 's2', 2);
+INSERT 0 1
+test=# insert into students values(3, 's3', 3);
+INSERT 0 1
+test=# 
+test=# -- Should Report Error
+test=# insert into students values(4, 's4', 4);
+ERROR:  insert or update on table "students" violates foreign key constraint "EDB_partition_35570_35565_tid_fkey"
+DETAIL:  Key (tid)=(4) is not present in table "teachers".
+test=# 
+test=# 
+test=# 
+test=# 
+test=# -- (2) Partitioned table referencing non partitioned table
+test=# create table blood_group(bid int primary key, bname varchar(255));
+CREATE TABLE
+test=# insert into blood_group values(1, 'O+');
+INSERT 0 1
+test=# insert into blood_group values(2, 'O-');
+INSERT 0 1
+test=# insert into blood_group values(3, 'A+');
+INSERT 0 1
+test=# insert into blood_group values(4, 'A-');
+INSERT 0 1
+test=# insert into blood_group values(5, 'B+');
+INSERT 0 1
+test=# insert into blood_group values(6, 'B-');
+INSERT 0 1
+test=# insert into blood_group values(7, 'AB+');
+INSERT 0 1
+test=# insert into blood_group values(8, 'AB-');
+INSERT 0 1
+test=# 
+test=# create table patients(pid int primary key, pname varchar(255), bid int)
+test-# PARTITION BY LIST(bid)
+test-# (
+test(#   PARTITION pO_pos VALUES (1),
+test(#   PARTITION pO_neg VALUES (2),
+test(#   PARTITION pA_pos VALUES (3),
+test(#   PARTITION pA_neg VALUES (4),
+test(#   PARTITION pB_pos VALUES (5),
+test(#   PARTITION pB_neg VALUES (6),
+test(#   PARTITION pAB_pos VALUES (7),
+test(#   PARTITION pAB_neg VALUES (8),
+test(#   PARTITION pxx VALUES (DEFAULT)
+test(# ); 
+CREATE TABLE
+test=# 
+test=# SELECT  edb_util.create_fk_constraint('blood_group',ARRAY['bid'],'patients',ARRAY['bid'],'cascade');
+INFO: creating constraint on patients_po_pos
+INFO: creating constraint on patients_po_neg
+INFO: creating constraint on patients_pa_pos
+INFO: creating constraint on patients_pa_neg
+INFO: creating constraint on patients_pb_pos
+INFO: creating constraint on patients_pb_neg
+INFO: creating constraint on patients_pab_pos
+INFO: creating constraint on patients_pab_neg
+INFO: creating constraint on patients_pxx
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# insert into patients values(1,'p1',1);
+INSERT 0 1
+test=# insert into patients values(2,'p2',2);
+INSERT 0 1
+test=# insert into patients values(3,'p3',3);
+INSERT 0 1
+test=# 
+test=# -- Should Report Error
+test=# insert into patients values(4,'p4',9);
+ERROR:  insert or update on table "patients_pxx" violates foreign key constraint "EDB_partition_35585_35657_35580_bid_fkey"
+DETAIL:  Key (bid)=(9) is not present in table "blood_group".
+test=# 
+test=# 
+test=# 
+test=# 
+test=# -- (3) Partitoned table referencing partitioned table
+test=# create table manufacturers(mid int primary key, mname varchar(255))
+test-# PARTITION BY HASH(mname)
+test-# (
+test(#   PARTITION p1,
+test(#   PARTITION p2,
+test(#   PARTITION p3,
+test(#   PARTITION p4
+test(# );
+CREATE TABLE
+test=# 
+test=# insert into manufacturers values(1, 'm1');
+INSERT 0 1
+test=# insert into manufacturers values(2, 'm2');
+INSERT 0 1
+test=# insert into manufacturers values(3, 'm3');
+INSERT 0 1
+test=# 
+test=# 
+test=# create table products(pid int primary key, pname varchar(255), mid int)
+test-# PARTITION BY HASH(pname)
+test-# (
+test(#   PARTITION p1,
+test(#   PARTITION p2,
+test(#   PARTITION p3,
+test(#   PARTITION p4
+test(# ); 
+CREATE TABLE
+test=# 
+test=# SELECT edb_util.create_fk_constraint('manufacturers',ARRAY['mid'],'products',ARRAY['mid'],'cascade');
+INFO: creating constraint on manufacturers_p1
+INFO: creating constraint on manufacturers_p2
+INFO: creating constraint on manufacturers_p3
+INFO: creating constraint on manufacturers_p4
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# insert into products values(1, 'p1', 1);
+INSERT 0 1
+test=# insert into products values(2, 'p2', 2);
+INSERT 0 1
+test=# insert into products values(3, 'p3', 3);
+INSERT 0 1
+test=# 
+test=# -- Should Report Error
+test=# insert into products values(4, 'p4', 4);
+ERROR:  tuple references non-existent key
+DETAIL:  Trigger "EDB_partition_35750_35710_mid_fkey" found tuple referencing non-existent key in "manufacturers".
+test=# 
+test=# 
+test=# 
+test=# 
+test=# -- (4) Non partitioned table referencing partitioned table
+test=# create table countries(cid int primary key, cname varchar(255))
+test-# PARTITION BY HASH(cid)
+test-# (
+test(#   PARTITION p1,
+test(#   PARTITION p2,
+test(#   PARTITION p3,
+test(#   PARTITION p4
+test(# ); 
+CREATE TABLE
+test=# 
+test=# insert into countries values(1, 'pakistan');
+INSERT 0 1
+test=# insert into countries values(2, 'iran');
+INSERT 0 1
+test=# insert into countries values(3, 'turkey');
+INSERT 0 1
+test=# 
+test=# create table travellers(tid int primary key, tname varchar(255), cid int);
+CREATE TABLE
+test=# 
+test=# SELECT edb_util.create_fk_constraint('countries',ARRAY['cid'],'travellers',ARRAY['cid'],'cascade');
+INFO: creating constraint on countries_p1
+INFO: creating constraint on countries_p2
+INFO: creating constraint on countries_p3
+INFO: creating constraint on countries_p4
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# insert into travellers values(1, 'r1', 1);
+INSERT 0 1
+test=# insert into travellers values(2, 'r2', 2);
+INSERT 0 1
+test=# insert into travellers values(3, 'r3', 3);
+INSERT 0 1
+test=# 
+test=# -- Should Report Error
+test=# insert into travellers values(4, 'r4', 4);
+ERROR:  tuple references non-existent key
+DETAIL:  Trigger "EDB_partition_35835_35795_cid_fkey" found tuple referencing non-existent key in "countries".
+test=# 
+
+```
