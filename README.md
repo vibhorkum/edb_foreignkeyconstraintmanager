@@ -29,12 +29,27 @@ Function takes following arguments:
 
 1. parent REGCLASS: Name of the parent table
 2. parent_column_names TEXT[]: list of columns of parent table in array format
-2. child REGCLASS: Name of the child table
-3.  child_column_names TEXT[]: column list of child table in array format
-4.  cascade TEXT: action for update/delete operation. cascade takes following arguments:
-  1. If cascade = 'cascade' — then on delete, delete the referencing row
-  2. If cascade = 'restrict' — then on delete abort transaction if referencing keys exist, 
-  3. If cascade = 'setnull' —  then on delete set referencing key fields to null
+3. child REGCLASS: Name of the child table
+4. child_column_names TEXT[]: column list of child table in array format
+5. cascade TEXT: action for update/delete operation. cascade takes following arguments:  
+  5.1. If cascade = 'cascade' — then on delete, delete the referencing row  
+  5.2. If cascade = 'restrict' — then on delete abort transaction if referencing keys exist,  
+  5.3. If cascade = 'setnull' —  then on delete set referencing key fields to null
+
+When a partition from the primary key table is deleted the module provides a SQL function **edb_util.alter_table_drop_partition()** in order to delete referencing rows from the foreign key table.
+
+Function takes following arguments:
+
+1. pk_table_name NAME: Name of the parent table
+2. partition_name NAME: Name of partition to delete
+3. fk_table_name name[]: List of child tables from which referencing rows are to be deleted
+4. cascade TEXT: action for update/delete operation. cascade takes following arguments:  
+  4.1. If cascade = 'cascade' — then on delete, delete the referencing row  
+  4.2. If cascade = 'restrict' — then on delete abort transaction if referencing keys exist,  
+  4.3. If cascade = 'setnull' —  then on delete set referencing key fields to null
+
+It is recomended to delete a partition from the parent table using the provided function rather than using ALTER TABLE DROP PARTITION syntax.
+
 
 ### Prerequisites
 For installation to proceed, the following extension must be installed on the  server:
@@ -47,7 +62,10 @@ CREATE EXTENSION IF NOT EXISTS refint;
 ## Code Example
 
 ```
-SELECT  edb_util.create_fk_constraint('parent',ARRAY['id'],'child',ARRAY['id'],'cascade');
+SELECT edb_util.create_fk_constraint('parent',ARRAY['id'],'child',ARRAY['id'],'cascade');
+
+SELECT edb_util.alter_table_drop_partition('patients', 'pO', ARRAY['appointments'], 'cascade');
+
 ```
 
 ## Installation
@@ -63,7 +81,7 @@ $ sudo PATH=$PATH:/usr/ppas-9.5/bin make install
 Now the extension can be created with a standard `CREATE EXTENSION edb_foreignkeyconstraintmanager;`, and dropped with `DROP EXTENSION edb_foreignkeyconstraintmanager;`.
 
 ## Usage
-This extension provides a single function.  Installation creates this object in the schema `edb_util`, which itself is created if it does not exist.
+This extension provides two functions.  Installation creates this object in the schema `edb_util`, which itself is created if it does not exist.
 
 ```
 CREATE OR REPLACE FUNCTION edb_util.create_fk_constraint(
@@ -74,13 +92,22 @@ CREATE OR REPLACE FUNCTION edb_util.create_fk_constraint(
   cascade TEXT
 )
 RETURNS boolean
+
+CREATE OR REPLACE FUNCTION edb_util.alter_table_drop_partition(
+  pk_table_name NAME, 
+  partition_name NAME, 
+  fk_table_name NAME[], 
+  cascade TEXT
+) 
+RETURNS BOOLEAN
+
 ```
  
 ## Limitations
 Following are the recommendations while using this extension:
 
 1. Whenever user adds any new partition in partitioned table, It is highly recommended to use **edb_util.create_fk_constraint** function to rebuild the FK for newly added partition.
-2. Droping any partition, will not remove the refernced key from referencing table. This is a manual activity with this implementation.
+2. Droping any partition, will remove the refernced key from referencing table provided that the tables were created using the REFERENCES clause OR constraints were added using ALTER TABLE ADD CONSTRAINT command.
 3. If user wants to drop the constraint triger, then they have to perform this operation manually i.e DROP "EDB_partition_" triggers/ Foreign Key constraint manually.
 
 ## Tests
@@ -300,5 +327,141 @@ test=# insert into travellers values(4, 'r4', 4);
 ERROR:  tuple references non-existent key
 DETAIL:  Trigger "EDB_partition_35835_35795_cid_fkey" found tuple referencing non-existent key in "countries".
 test=# 
+
+test=# -- () Delete rows from referencing table if required
+test=# create table blood_group(bid int primary key, bname varchar(255));
+CREATE TABLE
+test=# insert into blood_group values(1, 'O');
+INSERT 0 1
+test=# insert into blood_group values(2, 'A');
+INSERT 0 1
+test=# insert into blood_group values(3, 'B');
+INSERT 0 1
+test=# insert into blood_group values(4, 'AB');
+INSERT 0 1
+test=# 
+test=# create table patients(pid int primary key, pname varchar(255), bid int REFERENCES blood_group(bid))
+test-# PARTITION BY LIST(bid)
+test-# (
+test(#   PARTITION pO VALUES (1),
+test(#   PARTITION pA VALUES (2),
+test(#   PARTITION pB VALUES (3),
+test(#   PARTITION pAB VALUES (4)
+test(# ); 
+CREATE TABLE
+test=# 
+test=# SELECT  edb_util.create_fk_constraint('blood_group',ARRAY['bid'],'patients',ARRAY['bid'],'cascade');
+INFO: creating constraint on patients_po
+INFO: creating constraint on patients_pa
+INFO: creating constraint on patients_pb
+INFO: creating constraint on patients_pab
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# insert into patients values(1,'p1',1);
+INSERT 0 1
+test=# insert into patients values(2,'p2',2);
+INSERT 0 1
+test=# insert into patients values(3,'p3',3);
+INSERT 0 1
+test=# 
+test=# 
+test=# create table appointments(aid int primary key, doctor_id int, patient_id int REFERENCES patients(pid))
+test-# partition by LIST(doctor_id)
+test-# (
+test(#   PARTITION d1 VALUES (1),
+test(#   PARTITION d2 VALUES (2),
+test(#   PARTITION d3 VALUES (3)
+test(# );
+CREATE TABLE
+test=# 
+test=# 
+test=# create table sales(tid int primary key, aid int REFERENCES appointments(aid))
+test-# partition by LIST(tid)
+test-# (
+test(#   PARTITION t1 VALUES (1),
+test(#   PARTITION t2 VALUES (2),
+test(#   PARTITION t3 VALUES (3)
+test(# );
+CREATE TABLE
+test=# 
+test=# SELECT edb_util.create_fk_constraint('patients',ARRAY['pid'],'appointments',ARRAY['patient_id'],'cascade');
+INFO: creating constraint on patients_po
+INFO: creating constraint on patients_pa
+INFO: creating constraint on patients_pb
+INFO: creating constraint on patients_pab
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# SELECT  edb_util.create_fk_constraint('appointments',ARRAY['aid'],'sales',ARRAY['aid'],'cascade');
+INFO: creating constraint on appointments_d1
+INFO: creating constraint on appointments_d2
+INFO: creating constraint on appointments_d3
+ create_fk_constraint 
+----------------------
+ t
+(1 row)
+
+test=# 
+test=# 
+test=# insert into appointments values(1, 1, 1);
+INSERT 0 1
+test=# insert into appointments values(2, 2, 2);
+INSERT 0 1
+test=# insert into appointments values(3, 3, 3);
+INSERT 0 1
+test=# 
+test=# insert into sales values(1,1);
+INSERT 0 1
+test=# insert into sales values(2,2);
+INSERT 0 1
+test=# insert into sales values(3,3);
+INSERT 0 1
+test=# 
+test=# 
+test=# 
+test=# 
+test=# SELECT edb_util.alter_table_drop_partition('patients', 'pO', ARRAY['appointments'], 'restrict');
+ERROR:  The partition pO in table patients contains rows referenced by other tables
+CONTEXT:  SQL statement "SELECT edb_util.restrict_referencing_rows(pk_table_name, partition_name, fk_tab_name)"
+PL/pgSQL function edb_util.alter_table_drop_partition(name,name,name[],text) line 14 at SQL statement
+test=# 
+test=# 
+test=# 
+test=# SELECT edb_util.alter_table_drop_partition('patients', 'pO', ARRAY['appointments'], 'setnull');
+ alter_table_drop_partition 
+----------------------------
+ t
+(1 row)
+
+test=# select * from patients;
+ pid | pname | bid 
+-----+-------+-----
+   2 | p2    |   2
+   3 | p3    |   3
+(2 rows)
+
+test=# select * from appointments;
+ aid | doctor_id | patient_id 
+-----+-----------+------------
+   1 |         1 |           
+   2 |         2 |          2
+   3 |         3 |          3
+(3 rows)
+
+test=# select * from sales;
+ tid | aid 
+-----+-----
+   1 |   1
+   2 |   2
+   3 |   3
+(3 rows)
+
 
 ```
