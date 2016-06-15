@@ -61,8 +61,8 @@ ELSE
   -- add trigger for each partitioned table of parent  
   FOR table_oid in SELECT edb_util.get_partition_list(parent) 
   LOOP
-     trigger_name = name_suffix||parent::OID|| '_' || table_oid || '_' || child::OID||'_'||parent_col_list || '_fkey';
-    IF NOT edb_util.has_fk_trigger(trigger_name,parent) THEN
+    trigger_name = name_suffix||parent::OID|| '_' || table_oid || '_' || child::OID||'_'||parent_col_list || '_fkey';
+    IF NOT edb_util.has_fk_trigger(trigger_name,table_oid::REGCLASS::TEXT) THEN
        PERFORM DBMS_OUTPUT.PUT_LINE('INFO: creating constraint on '||table_oid::REGCLASS::TEXT);
        EXECUTE 'CREATE TRIGGER ' || quote_ident(trigger_name) || ' BEFORE DELETE OR UPDATE ON ' || table_oid::REGCLASS::TEXT || ' FOR EACH ROW
        EXECUTE PROCEDURE
@@ -82,18 +82,17 @@ ELSE
    trigger_name = name_suffix||child::OID|| '_' || parent::OID||'_'||parent_col_list || '_fkey';
 
   IF edb_util.has_fk_trigger(trigger_name,child) THEN
-    RAISE unique_violation USING MESSAGE = 'a trigger named ' || trigger_name || ' already exists';
+    PERFORM DBMS_OUTPUT.PUT_LINE('INFO: '|| 'Trigger:'|| trigger_name || ' already exists');
+  ELSE
+    EXECUTE 'CREATE TRIGGER ' || quote_ident(trigger_name )|| ' BEFORE INSERT OR UPDATE ON ' || child || ' FOR EACH ROW
+    EXECUTE PROCEDURE
+    check_primary_key (
+      ' || child_col_list || ',	-- name of foreign key column in triggered (B) table. You may use as
+  		  		-- many columns as you need, but number of key columns in referenced
+			  	-- table must be the same.
+      ' || parent || ', -- referenced table name.
+      ' || parent_col_list || ')';
   END IF;
-
-  EXECUTE 'CREATE TRIGGER ' || quote_ident(trigger_name )|| ' BEFORE INSERT OR UPDATE ON ' || child || ' FOR EACH ROW
-  EXECUTE PROCEDURE
-  check_primary_key (
-    ' || child_col_list || ',	-- name of foreign key column in triggered (B) table. You may use as
-  				-- many columns as you need, but number of key columns in referenced
-				-- table must be the same.
-    ' || parent || ', -- referenced table name.
-    ' || parent_col_list || ')';	
-
 END IF;
 RETURN TRUE;  
 END; 
