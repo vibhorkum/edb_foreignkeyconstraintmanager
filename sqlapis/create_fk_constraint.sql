@@ -6,13 +6,14 @@ child regclass, child_column_names text[], cascade TEXT)
 AS $function$
 
 DECLARE
-	trigger_name TEXT;
-	table_oid OID;
-        name_prefix TEXT;
-        child_col_list TEXT;
-        parent_col_list TEXT;
-        name_suffix TEXT;
-        query TEXT;
+    trigger_name TEXT;
+    table_oid OID;
+    name_prefix TEXT;
+    child_col_list TEXT;
+    parent_col_list TEXT;
+    name_suffix TEXT;
+    query TEXT;
+    action_clause TEXT;
 BEGIN
    name_suffix := 'EDB_partition_';
    child_col_list := array_to_string(child_column_names, ',');
@@ -25,6 +26,13 @@ IF substring(version(),'EnterpriseDB') != 'EnterpriseDB'
       USING HINT = 'PPAS in oracle compatiblity mode is required for this extension';
 END IF;  
 
+  SELECT CASE WHEN upper(cascade) = 'CASCADE' THEN ' ON DELETE CASCADE ON UPDATE CASCADE '
+              WHEN upper(cascade) = 'RESTRICT' THEN ' ON DELETE RESTRICT ON UPDATE RESTRICT '
+              WHEN upper(cascade) = 'SETNULL' THEN ' ON DELETE SET NULL ON UPDATE SET NULL '
+              ELSE ' '
+         END
+  INTO action_clause;
+
 --  Parent is not partition
 IF NOT edb_util.is_partition(parent) THEN
   -- parent is not partitioned and child is partitioned, then alter table on each partition table
@@ -36,8 +44,9 @@ IF NOT edb_util.is_partition(parent) THEN
       -- if constraint exists, raise notice
       IF NOT edb_util.has_fk_constraint(table_oid::regclass, child_col_list,parent, parent_col_list) THEN
         PERFORM DBMS_OUTPUT.PUT_LINE('INFO: creating constraint on '||table_oid::REGCLASS::TEXT);
-        query := format('ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)',
-                        table_oid::REGCLASS::TEXT, quote_ident(trigger_name), child_col_list, parent::TEXT, parent_col_list);
+        query := format('ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) %s',
+                        table_oid::REGCLASS::TEXT, quote_ident(trigger_name), child_col_list,
+                        parent::TEXT, parent_col_list, action_clause);
         EXECUTE query;
       ELSE 
         PERFORM DBMS_OUTPUT.PUT_LINE('INFO: '||table_oid::REGCLASS::TEXT||' already has Fkey');
@@ -48,14 +57,14 @@ IF NOT edb_util.is_partition(parent) THEN
   ELSE
     IF NOT edb_util.has_fk_constraint(child, child_col_list,parent, parent_col_list) THEN
        trigger_name := name_suffix||child::OID||'_'||parent::OID||'_'||child_col_list || '_fkey';
-       query := format('ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)',
-                        child::TEXT, quote_ident(trigger_name), child_col_list, parent::TEXT, parent_col_list);
+       query := format('ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) %s',
+                        child::TEXT, quote_ident(trigger_name), child_col_list,
+                        parent::TEXT, parent_col_list, action_clause);
        EXECUTE query;
     ELSE 
        PERFORM DBMS_OUTPUT.PUT_LINE('INFO: '||child::TEXT||' already has Fkey');
     END IF;
   END IF;
-
 ELSE
   -- parent is partitioned
   -- add trigger for each partitioned table of parent  
